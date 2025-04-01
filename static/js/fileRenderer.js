@@ -291,9 +291,22 @@ class FileRenderer {
         });
       });
       
-      // Click event (download)
-      elem.addEventListener('click', () => {
-        window.location.href = `/api/files/${item.id}`;
+      // Click event (preview)
+      elem.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        console.log('File clicked:', item);
+        
+        // Open file in our new inline viewer
+        if (window.inlineViewer) {
+          console.log('Using inline viewer');
+          window.inlineViewer.openFile(item);
+        } else {
+          console.warn('Inline viewer not available, downloading directly');
+          // Fallback to direct download if viewer is not available
+          window.location.href = `/api/files/${item.id}`;
+        }
       });
     }
     
@@ -422,9 +435,22 @@ class FileRenderer {
         });
       });
       
-      // Click event (download)
-      elem.addEventListener('click', () => {
-        window.location.href = `/api/files/${item.id}`;
+      // Click event (preview)
+      elem.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        console.log('File clicked:', item);
+        
+        // Open file in our new inline viewer
+        if (window.inlineViewer) {
+          console.log('Using inline viewer');
+          window.inlineViewer.openFile(item);
+        } else {
+          console.warn('Inline viewer not available, downloading directly');
+          // Fallback to direct download if viewer is not available
+          window.location.href = `/api/files/${item.id}`;
+        }
       });
     }
     

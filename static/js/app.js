@@ -56,6 +56,15 @@ function initApp() {
         console.log('Using standard file rendering');
     }
     
+    // Check if inline viewer is initialized
+    if (window.inlineViewer) {
+        console.log('Inline viewer is available');
+    } else {
+        console.warn('Inline viewer not initialized yet, will initialize it now');
+        // Create inline viewer if not already created
+        window.inlineViewer = new InlineViewer();
+    }
+    
     // Wait for translations to load before checking authentication
     if (window.i18n && window.i18n.isLoaded && window.i18n.isLoaded()) {
         // Translations already loaded, proceed with authentication

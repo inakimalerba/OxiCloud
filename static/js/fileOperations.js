@@ -459,6 +459,47 @@ const fileOps = {
             window.ui.showNotification('Error', 'Error al vaciar la papelera');
             return false;
         }
+    },
+    
+    /**
+     * Descargar un archivo
+     * @param {string} fileId - ID del archivo
+     * @param {string} fileName - Nombre del archivo
+     */
+    downloadFile(fileId, fileName) {
+        // Create a link and trigger download
+        const link = document.createElement('a');
+        link.href = `/api/files/${fileId}`;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+    
+    /**
+     * Descargar una carpeta como ZIP
+     * @param {string} folderId - ID de la carpeta
+     * @param {string} folderName - Nombre de la carpeta
+     */
+    async downloadFolder(folderId, folderName) {
+        try {
+            // Show notification to user
+            window.ui.showNotification('Preparando descarga', 'Preparando la carpeta para descargar...');
+            
+            // Request the server to create a ZIP of the folder
+            // Since the API might not support this directly, we will simply download with zip parameter
+            const link = document.createElement('a');
+            link.href = `/api/folders/${folderId}/download?format=zip`;
+            link.download = `${folderName}.zip`;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading folder:', error);
+            window.ui.showNotification('Error', 'Error al descargar la carpeta');
+        }
     }
 };
 

@@ -196,10 +196,20 @@ impl FileHandler {
                         Ok(content) => {
                             // Create base headers
                             let mut headers = HashMap::new();
-                            headers.insert(
-                                header::CONTENT_DISPOSITION.to_string(), 
+                            
+                            // Determine if the file should be displayed inline or downloaded
+                            // Images and PDFs should be displayed inline by default, or if inline param is present
+                            let force_inline = params.get("inline").map_or(false, |v| v == "true" || v == "1");
+                            
+                            let disposition = if force_inline || 
+                                             file.mime_type.starts_with("image/") || 
+                                             file.mime_type == "application/pdf" {
+                                format!("inline; filename=\"{}\"", file.name)
+                            } else {
                                 format!("attachment; filename=\"{}\"", file.name)
-                            );
+                            };
+                            
+                            headers.insert(header::CONTENT_DISPOSITION.to_string(), disposition);
                             
                             if should_compress {
                                 // Add content-encoding header for compressed response
@@ -290,10 +300,20 @@ impl FileHandler {
                         Ok(content) => {
                             // Create base headers
                             let mut headers = HashMap::new();
-                            headers.insert(
-                                header::CONTENT_DISPOSITION.to_string(), 
+                            
+                            // Determine if the file should be displayed inline or downloaded
+                            // Images and PDFs should be displayed inline by default, or if inline param is present
+                            let force_inline = params.get("inline").map_or(false, |v| v == "true" || v == "1");
+                            
+                            let disposition = if force_inline || 
+                                             file.mime_type.starts_with("image/") || 
+                                             file.mime_type == "application/pdf" {
+                                format!("inline; filename=\"{}\"", file.name)
+                            } else {
                                 format!("attachment; filename=\"{}\"", file.name)
-                            );
+                            };
+                            
+                            headers.insert(header::CONTENT_DISPOSITION.to_string(), disposition);
                             
                             if should_compress {
                                 // Add content-encoding header for compressed response
