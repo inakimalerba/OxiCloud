@@ -69,6 +69,25 @@ CREATE TABLE IF NOT EXISTS auth.user_files (
 CREATE INDEX IF NOT EXISTS idx_user_files_user_id ON auth.user_files(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_files_file_id ON auth.user_files(file_id);
 
+-- User favorites table for cross-device synchronization
+CREATE TABLE IF NOT EXISTS auth.user_favorites (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    item_id VARCHAR(255) NOT NULL,
+    item_type VARCHAR(10) NOT NULL, -- 'file' or 'folder'
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, item_id, item_type)
+);
+
+-- Create indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user_id ON auth.user_favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_item_id ON auth.user_favorites(item_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_type ON auth.user_favorites(item_type);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_created ON auth.user_favorites(created_at);
+
+-- Combined index for quick lookups by user and type
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user_type ON auth.user_favorites(user_id, item_type);
+
 -- Create admin user (password: Admin123!)
 INSERT INTO auth.users (
     id, 
@@ -106,3 +125,4 @@ INSERT INTO auth.users (
 COMMENT ON TABLE auth.users IS 'Stores user account information';
 COMMENT ON TABLE auth.sessions IS 'Stores user session information for refresh tokens';
 COMMENT ON TABLE auth.user_files IS 'Tracks file ownership and storage utilization by users';
+COMMENT ON TABLE auth.user_favorites IS 'Stores user favorite files and folders for cross-device synchronization';

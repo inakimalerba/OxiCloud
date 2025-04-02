@@ -5,3 +5,4 @@ pub mod storage_ports;
 pub mod auth_ports;
 pub mod trash_ports;
 pub mod share_ports;
+pub mod favorites_ports;

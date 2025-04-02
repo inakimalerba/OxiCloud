@@ -21,6 +21,7 @@ use crate::application::ports::trash_ports::TrashUseCase;
 use crate::application::services::storage_mediator::{StorageMediator, FileSystemStorageMediator};
 use crate::application::ports::inbound::{FileUseCase, FolderUseCase, SearchUseCase};
 use crate::application::ports::outbound::{FileStoragePort, FolderStoragePort};
+use crate::application::ports::favorites_ports::FavoritesUseCase;
 use crate::application::ports::file_ports::{FileUploadUseCase, FileRetrievalUseCase, FileManagementUseCase, FileUseCaseFactory};
 use crate::application::ports::storage_ports::{FileReadPort, FileWritePort};
 use crate::infrastructure::repositories::{FileMetadataManager, FilePathResolver, FileFsReadRepository, FileFsWriteRepository};
@@ -240,6 +241,7 @@ impl AppServiceFactory {
             trash_service,
             search_service,
             share_service: None, // No share service by default
+            favorites_service: None // No favorites service by default
         }
     }
 }
@@ -283,6 +285,7 @@ pub struct ApplicationServices {
     pub trash_service: Option<Arc<dyn TrashUseCase>>,
     pub search_service: Option<Arc<dyn SearchUseCase>>,
     pub share_service: Option<Arc<dyn crate::application::ports::share_ports::ShareUseCase>>,
+    pub favorites_service: Option<Arc<dyn FavoritesUseCase>>,
 }
 
 /// Contenedor para servicios de autenticación
@@ -303,6 +306,7 @@ pub struct AppState {
     pub auth_service: Option<AuthServices>,
     pub trash_service: Option<Arc<dyn TrashUseCase>>,
     pub share_service: Option<Arc<dyn crate::application::ports::share_ports::ShareUseCase>>,
+    pub favorites_service: Option<Arc<dyn FavoritesUseCase>>,
 }
 
 impl Default for AppState {
@@ -772,6 +776,7 @@ impl Default for AppState {
             trash_service: None, // No trash service in minimal mode
             search_service: Some(Arc::new(DummySearchUseCase) as Arc<dyn crate::application::ports::inbound::SearchUseCase>),
             share_service: None, // No share service in minimal mode
+            favorites_service: None, // No favorites service in minimal mode
         };
         
         // Return a minimal app state
@@ -783,6 +788,7 @@ impl Default for AppState {
             auth_service: None,
             trash_service: None,
             share_service: None,
+            favorites_service: None,
         }
     }
 }
@@ -801,6 +807,7 @@ impl AppState {
             auth_service: None,
             trash_service: None,
             share_service: None,
+            favorites_service: None,
         }
     }
     
@@ -821,6 +828,11 @@ impl AppState {
     
     pub fn with_share_service(mut self, share_service: Arc<dyn crate::application::ports::share_ports::ShareUseCase>) -> Self {
         self.share_service = Some(share_service);
+        self
+    }
+    
+    pub fn with_favorites_service(mut self, favorites_service: Arc<dyn FavoritesUseCase>) -> Self {
+        self.favorites_service = Some(favorites_service);
         self
     }
 }

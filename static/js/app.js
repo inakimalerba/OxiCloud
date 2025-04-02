@@ -14,7 +14,8 @@ const app = {
     moveDialogMode: 'file',         // Move dialog mode: 'file' or 'folder'
     isTrashView: false,    // Whether we're in trash view
     isSharedView: false,   // Whether we're in shared view
-    currentSection: 'files', // Current section: 'files', 'trash' or 'shared'
+    isFavoritesView: false, // Whether we're in favorites view
+    currentSection: 'files', // Current section: 'files', 'trash', 'shared' or 'favorites'
     isSearchMode: false,    // Whether we're in search mode
     // File sharing related properties
     shareDialogItem: null,          // Item being shared in share dialog
@@ -61,8 +62,24 @@ function initApp() {
         console.log('Inline viewer is available');
     } else {
         console.warn('Inline viewer not initialized yet, will initialize it now');
-        // Create inline viewer if not already created
-        window.inlineViewer = new InlineViewer();
+        try {
+            // Create inline viewer if not already created and if the class exists
+            if (typeof InlineViewer !== 'undefined') {
+                window.inlineViewer = new InlineViewer();
+            } else {
+                console.warn('InlineViewer class is not defined, skipping initialization');
+            }
+        } catch (e) {
+            console.error('Error initializing inline viewer:', e);
+        }
+    }
+    
+    // Initialize favorites module if available
+    if (window.favorites && window.favorites.init) {
+        console.log('Initializing favorites module');
+        window.favorites.init();
+    } else {
+        console.warn('Favorites module not available or not initializable');
     }
     
     // Wait for translations to load before checking authentication
@@ -179,6 +196,13 @@ function setupEventListeners() {
             if (item.querySelector('span').getAttribute('data-i18n') === 'nav.shared') {
                 // Switch to shared view
                 switchToSharedView();
+                return;
+            }
+            
+            // Check if this is the favorites item
+            if (item.querySelector('span').getAttribute('data-i18n') === 'nav.favorites') {
+                // Switch to favorites view
+                switchToFavoritesView();
                 return;
             }
             
@@ -735,6 +759,7 @@ function switchToFilesView() {
     // Reset view flags
     app.isTrashView = false;
     app.isSharedView = false;
+    app.isFavoritesView = false;
     app.currentSection = 'files';
     
     // Update UI
@@ -816,9 +841,98 @@ function switchToFilesView() {
     loadFiles();
 }
 
+/**
+ * Switch to the favorites view
+ */
+function switchToFavoritesView() {
+    // Hide other views
+    app.isTrashView = false;
+    app.isSharedView = false;
+    
+    // Set favorites view as active
+    app.isFavoritesView = true;
+    app.currentSection = 'favorites';
+    
+    // Remove active class from all nav items
+    elements.navItems.forEach(navItem => navItem.classList.remove('active'));
+    
+    // Find favorites nav item and make it active
+    const favoritesNavItem = document.querySelector('.nav-item:nth-child(4)');
+    if (favoritesNavItem) {
+        favoritesNavItem.classList.add('active');
+    }
+    
+    // Update UI
+    elements.pageTitle.textContent = window.i18n ? window.i18n.t('nav.favorites') : 'Favoritos';
+    
+    // Clear breadcrumb and show root
+    ui.updateBreadcrumb(window.i18n ? window.i18n.t('nav.favorites') : 'Favoritos');
+    
+    // Hide shared view if it exists
+    if (window.sharedView) {
+        window.sharedView.hide();
+    }
+    
+    // Configure actions bar for favorites view
+    elements.actionsBar.innerHTML = `
+        <div class="action-buttons">
+            <!-- No actions needed for favorites view -->
+        </div>
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="grid-view-btn" title="Vista de cuadrícula">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="toggle-btn" id="list-view-btn" title="Vista de lista">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    `;
+    elements.actionsBar.style.display = 'flex';
+    
+    // Restore view toggle event listeners
+    document.getElementById('grid-view-btn').addEventListener('click', ui.switchToGridView);
+    document.getElementById('list-view-btn').addEventListener('click', ui.switchToListView);
+    
+    // Update cached elements
+    elements.gridViewBtn = document.getElementById('grid-view-btn');
+    elements.listViewBtn = document.getElementById('list-view-btn');
+    
+    // Show standard files containers
+    const filesGrid = document.getElementById('files-grid');
+    const filesListView = document.getElementById('files-list-view');
+    
+    if (filesGrid) {
+        filesGrid.style.display = app.currentView === 'grid' ? 'grid' : 'none';
+    }
+    
+    if (filesListView) {
+        filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
+    }
+    
+    // Check if favorites module is initialized
+    if (window.favorites) {
+        // Display favorites
+        window.favorites.displayFavorites();
+    } else {
+        console.error('Favorites module not loaded or initialized');
+        
+        // Show error in UI
+        const filesGrid = document.getElementById('files-grid');
+        if (filesGrid) {
+            filesGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f44336; margin-bottom: 16px;"></i>
+                    <p>Error al cargar el módulo de favoritos</p>
+                </div>
+            `;
+        }
+    }
+}
+
 // Expose view switching functions globally
 window.switchToFilesView = switchToFilesView;
 window.switchToSharedView = switchToSharedView;
+window.switchToFavoritesView = switchToFavoritesView;
 
 /**
  * Check if user is authenticated and load user's home folder

@@ -20,6 +20,33 @@ const contextMenus = {
             window.ui.closeContextMenu();
         });
         
+        document.getElementById('favorite-folder-option').addEventListener('click', () => {
+            if (window.app.contextMenuTargetFolder) {
+                const folder = window.app.contextMenuTargetFolder;
+                
+                // Check if folder is already in favorites to toggle
+                if (window.favorites && window.favorites.isFavorite(folder.id, 'folder')) {
+                    // Remove from favorites
+                    window.favorites.removeFromFavorites(folder.id, 'folder');
+                    // Update menu item text
+                    document.getElementById('favorite-folder-option').querySelector('span').textContent = 
+                        window.i18n ? window.i18n.t('actions.favorite') : 'Añadir a favoritos';
+                } else {
+                    // Add to favorites
+                    window.favorites.addToFavorites(
+                        folder.id,
+                        folder.name,
+                        'folder',
+                        folder.parent_id
+                    );
+                    // Update menu item text
+                    document.getElementById('favorite-folder-option').querySelector('span').textContent = 
+                        window.i18n ? window.i18n.t('actions.unfavorite') : 'Quitar de favoritos';
+                }
+            }
+            window.ui.closeContextMenu();
+        });
+        
         document.getElementById('rename-folder-option').addEventListener('click', () => {
             if (window.app.contextMenuTargetFolder) {
                 this.showRenameDialog(window.app.contextMenuTargetFolder);
@@ -58,6 +85,33 @@ const contextMenus = {
                     window.app.contextMenuTargetFile.id,
                     window.app.contextMenuTargetFile.name
                 );
+            }
+            window.ui.closeFileContextMenu();
+        });
+        
+        document.getElementById('favorite-file-option').addEventListener('click', () => {
+            if (window.app.contextMenuTargetFile) {
+                const file = window.app.contextMenuTargetFile;
+                
+                // Check if file is already in favorites to toggle
+                if (window.favorites && window.favorites.isFavorite(file.id, 'file')) {
+                    // Remove from favorites
+                    window.favorites.removeFromFavorites(file.id, 'file');
+                    // Update menu item text
+                    document.getElementById('favorite-file-option').querySelector('span').textContent = 
+                        window.i18n ? window.i18n.t('actions.favorite') : 'Añadir a favoritos';
+                } else {
+                    // Add to favorites
+                    window.favorites.addToFavorites(
+                        file.id,
+                        file.name,
+                        'file',
+                        file.folder_id
+                    );
+                    // Update menu item text
+                    document.getElementById('favorite-file-option').querySelector('span').textContent = 
+                        window.i18n ? window.i18n.t('actions.unfavorite') : 'Quitar de favoritos';
+                }
             }
             window.ui.closeFileContextMenu();
         });
