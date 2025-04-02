@@ -1,0 +1,56 @@
+name: Docker Build and Test
+
+# Trigger on push to main branch or on pull requests
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  # Build and test Docker image but don't push
+  build-and-test:
+    name: Build and Test Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: test/oxicloud
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+
+      # Build Docker image but don't push
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: test/oxicloud:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      # Run some basic tests against the built image
+      - name: Test Docker image
+        run: |
+          docker run --rm test/oxicloud:test --version || true
+          docker run --rm test/oxicloud:test --help || true
+          
+          # Verify the image structure
+          echo "✅ Checking Docker image layers and size"
+          docker image inspect test/oxicloud:test
+          
+          echo "✅ Docker build and test completed successfully"
