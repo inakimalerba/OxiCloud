@@ -629,6 +629,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Favorites service is disabled (requires database connection)");
         None
     };
+    
+    // Initialize recent items service if database is available
+    let recent_service: Option<Arc<dyn application::ports::recent_ports::RecentItemsUseCase>> = 
+    if let Some(ref pool) = db_pool {
+        // Create a new service with the database pool
+        let service = Arc::new(application::services::recent_service::RecentService::new(
+            pool.clone(),
+            50 // Maximum recent items per user
+        ));
+        
+        tracing::info!("Recent items service initialized successfully");
+        Some(service)
+    } else {
+        tracing::info!("Recent items service is disabled (requires database connection)");
+        None
+    };
 
     let application_services = common::di::ApplicationServices {
         folder_service: folder_service.clone(),
@@ -642,6 +658,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         search_service: search_service.clone(),
         share_service: share_service.clone(),
         favorites_service: favorites_service.clone(),
+        recent_service: recent_service.clone()
     };
     
     // Create the AppState without Arc first
@@ -667,11 +684,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         app_state = app_state.with_favorites_service(service);
     }
     
+    // Add recent service if available
+    if let Some(service) = recent_service.clone() {
+        app_state = app_state.with_recent_service(service);
+    }
+    
     // Wrap in Arc after all modifications
     let app_state = Arc::new(app_state);
 
     // Build application router
-    let api_routes = create_api_routes(folder_service, file_service, Some(i18n_service), trash_service, search_service, share_service, favorites_service);
+    let api_routes = create_api_routes(folder_service, file_service, Some(i18n_service), trash_service, search_service, share_service, favorites_service, recent_service);
     let web_routes = create_web_routes();
     
     // Build the app router

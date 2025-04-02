@@ -26,6 +26,7 @@ use crate::application::ports::trash_ports::TrashUseCase;
 use crate::application::ports::inbound::SearchUseCase;
 use crate::application::ports::share_ports::ShareUseCase;
 use crate::application::ports::favorites_ports::FavoritesUseCase;
+use crate::application::ports::recent_ports::RecentItemsUseCase;
 
 use crate::interfaces::api::handlers::folder_handler::FolderHandler;
 use crate::interfaces::api::handlers::file_handler::FileHandler;
@@ -45,6 +46,7 @@ pub fn create_api_routes(
     search_service: Option<Arc<dyn SearchUseCase>>,
     share_service: Option<Arc<dyn ShareUseCase>>,
     favorites_service: Option<Arc<dyn FavoritesUseCase>>,
+    recent_service: Option<Arc<dyn RecentItemsUseCase>>,
 ) -> Router<crate::common::di::AppState> {
     // Create a simplified AppState for the trash view
     // Setup required components for repository construction
@@ -109,12 +111,14 @@ pub fn create_api_routes(
             search_service: search_service.clone(), // Include the search service
             share_service: share_service.clone(), // Include the share service
             favorites_service: favorites_service.clone(), // Include the favorites service
+            recent_service: recent_service.clone(), // Include the recent service
         },
         db_pool: None,
         auth_service: None,
         trash_service: trash_service.clone(), // This is the important part - include the trash service
         share_service: share_service.clone(), // Include the share service for routes
-        favorites_service: favorites_service.clone() // Include the favorites service for routes
+        favorites_service: favorites_service.clone(), // Include the favorites service for routes
+        recent_service: recent_service.clone() // Include the recent service for routes
     };
     // Inicializar el servicio de operaciones por lotes
     let batch_service = Arc::new(BatchOperationService::default(
@@ -340,6 +344,20 @@ pub fn create_api_routes(
     } else {
         Router::new()
     };
+    
+    // Create routes for recent items if the service is available
+    let recent_router = if let Some(recent_service) = recent_service.clone() {
+        use crate::interfaces::api::handlers::recent_handler;
+        
+        Router::new()
+            .route("/", get(recent_handler::get_recent_items))
+            .route("/{item_type}/{item_id}", post(recent_handler::record_item_access))
+            .route("/{item_type}/{item_id}", delete(recent_handler::remove_from_recent))
+            .route("/clear", delete(recent_handler::clear_recent_items))
+            .with_state(recent_service.clone())
+    } else {
+        Router::new()
+    };
 
     let mut router = Router::new()
         .nest("/folders", folders_router)
@@ -349,6 +367,7 @@ pub fn create_api_routes(
         .nest("/shares", share_router)
         .nest("/s", public_share_router)
         .nest("/favorites", favorites_router)
+        .nest("/recent", recent_router)
         ;
     
     // Store the share service in app_state for future use
