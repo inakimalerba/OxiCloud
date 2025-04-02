@@ -50,8 +50,18 @@ CREATE TABLE IF NOT EXISTS auth.sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON auth.sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_refresh_token ON auth.sessions(refresh_token);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON auth.sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_sessions_active ON auth.sessions(user_id, revoked, expires_at)
-WHERE NOT revoked AND expires_at > NOW();
+
+-- Create function for active sessions to use in index
+CREATE OR REPLACE FUNCTION auth.is_session_active(expires_at timestamptz)
+RETURNS boolean AS $$
+BEGIN
+  RETURN expires_at > now();
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Create index for active sessions with IMMUTABLE function
+CREATE INDEX IF NOT EXISTS idx_sessions_active ON auth.sessions(user_id, revoked)
+WHERE NOT revoked AND auth.is_session_active(expires_at);
 
 -- File ownership tracking
 CREATE TABLE IF NOT EXISTS auth.user_files (
@@ -87,6 +97,27 @@ CREATE INDEX IF NOT EXISTS idx_user_favorites_created ON auth.user_favorites(cre
 
 -- Combined index for quick lookups by user and type
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user_type ON auth.user_favorites(user_id, item_type);
+
+-- Table for recent files 
+CREATE TABLE IF NOT EXISTS auth.user_recent_files (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    item_id VARCHAR(255) NOT NULL,
+    item_type VARCHAR(10) NOT NULL, -- 'file' or 'folder'
+    accessed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, item_id, item_type)
+);
+
+-- Create indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_user_recent_user_id ON auth.user_recent_files(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_recent_item_id ON auth.user_recent_files(item_id);
+CREATE INDEX IF NOT EXISTS idx_user_recent_type ON auth.user_recent_files(item_type);
+CREATE INDEX IF NOT EXISTS idx_user_recent_accessed ON auth.user_recent_files(accessed_at);
+
+-- Combined index for quick lookups by user and accessed time (for sorting)
+CREATE INDEX IF NOT EXISTS idx_user_recent_user_accessed ON auth.user_recent_files(user_id, accessed_at DESC);
+
+COMMENT ON TABLE auth.user_recent_files IS 'Stores recently accessed files and folders for cross-device synchronization';
 
 -- Create admin user (password: Admin123!)
 INSERT INTO auth.users (

@@ -19,12 +19,14 @@
     "move_to": "Move to",
     "delete": "Delete",
     "download": "Download",
+    "view": "View",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "share": "Share",
     "copy": "Copy",
     "notify": "Notify",
-    "send": "Send"
+    "send": "Send",
+    "clear_recent": "Clear recent"
   },
   "share": {
     "dialogTitle": "Share Link",

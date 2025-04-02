@@ -79,6 +79,47 @@ const contextMenus = {
         });
 
         // File context menu options
+        document.getElementById('view-file-option').addEventListener('click', () => {
+            if (window.app.contextMenuTargetFile) {
+                // Fetch file details to get the mime type
+                fetch(`/api/files/${window.app.contextMenuTargetFile.id}?metadata=true`)
+                    .then(response => response.json())
+                    .then(fileDetails => {
+                        // Check if viewable file type
+                        if ((fileDetails.mime_type && fileDetails.mime_type.startsWith('image/')) || 
+                            (fileDetails.mime_type && fileDetails.mime_type === 'application/pdf')) {
+                            // Open with inline viewer
+                            if (window.inlineViewer) {
+                                window.inlineViewer.openFile(fileDetails);
+                            } else if (window.fileViewer) {
+                                window.fileViewer.open(fileDetails);
+                            } else {
+                                // If no viewer is available, download directly
+                                window.fileOps.downloadFile(
+                                    window.app.contextMenuTargetFile.id,
+                                    window.app.contextMenuTargetFile.name
+                                );
+                            }
+                        } else {
+                            // For non-viewable files, download
+                            window.fileOps.downloadFile(
+                                window.app.contextMenuTargetFile.id,
+                                window.app.contextMenuTargetFile.name
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching file details:', error);
+                        // On error, fallback to download
+                        window.fileOps.downloadFile(
+                            window.app.contextMenuTargetFile.id,
+                            window.app.contextMenuTargetFile.name
+                        );
+                    });
+            }
+            window.ui.closeFileContextMenu();
+        });
+        
         document.getElementById('download-file-option').addEventListener('click', () => {
             if (window.app.contextMenuTargetFile) {
                 window.fileOps.downloadFile(

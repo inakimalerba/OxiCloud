@@ -7,4 +7,5 @@ pub mod trash_dto;
 pub mod search_dto;
 pub mod share_dto;
 pub mod favorites_dto;
+pub mod recent_dto;
 

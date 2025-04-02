@@ -15,7 +15,8 @@ const app = {
     isTrashView: false,    // Whether we're in trash view
     isSharedView: false,   // Whether we're in shared view
     isFavoritesView: false, // Whether we're in favorites view
-    currentSection: 'files', // Current section: 'files', 'trash', 'shared' or 'favorites'
+    isRecentView: false,    // Whether we're in recent files view
+    currentSection: 'files', // Current section: 'files', 'trash', 'shared', 'favorites' or 'recent'
     isSearchMode: false,    // Whether we're in search mode
     // File sharing related properties
     shareDialogItem: null,          // Item being shared in share dialog
@@ -80,6 +81,14 @@ function initApp() {
         window.favorites.init();
     } else {
         console.warn('Favorites module not available or not initializable');
+    }
+    
+    // Initialize recent files module if available
+    if (window.recent && window.recent.init) {
+        console.log('Initializing recent files module');
+        window.recent.init();
+    } else {
+        console.warn('Recent files module not available or not initializable');
     }
     
     // Wait for translations to load before checking authentication
@@ -203,6 +212,13 @@ function setupEventListeners() {
             if (item.querySelector('span').getAttribute('data-i18n') === 'nav.favorites') {
                 // Switch to favorites view
                 switchToFavoritesView();
+                return;
+            }
+            
+            // Check if this is the recent files item
+            if (item.querySelector('span').getAttribute('data-i18n') === 'nav.recent') {
+                // Switch to recent files view
+                switchToRecentFilesView();
                 return;
             }
             
@@ -760,6 +776,7 @@ function switchToFilesView() {
     app.isTrashView = false;
     app.isSharedView = false;
     app.isFavoritesView = false;
+    app.isRecentView = false;
     app.currentSection = 'files';
     
     // Update UI
@@ -929,10 +946,111 @@ function switchToFavoritesView() {
     }
 }
 
+/**
+ * Switch to the recent files view
+ */
+function switchToRecentFilesView() {
+    // Hide other views
+    app.isTrashView = false;
+    app.isSharedView = false;
+    app.isFavoritesView = false;
+    
+    // Set recent view as active
+    app.isRecentView = true;
+    app.currentSection = 'recent';
+    
+    // Remove active class from all nav items
+    elements.navItems.forEach(navItem => navItem.classList.remove('active'));
+    
+    // Find recent nav item and make it active
+    const recentNavItem = document.querySelector('.nav-item:nth-child(3)');
+    if (recentNavItem) {
+        recentNavItem.classList.add('active');
+    }
+    
+    // Update UI
+    elements.pageTitle.textContent = window.i18n ? window.i18n.t('nav.recent') : 'Recientes';
+    
+    // Clear breadcrumb and show root
+    ui.updateBreadcrumb(window.i18n ? window.i18n.t('nav.recent') : 'Recientes');
+    
+    // Hide shared view if it exists
+    if (window.sharedView) {
+        window.sharedView.hide();
+    }
+    
+    // Configure actions bar for recent view
+    elements.actionsBar.innerHTML = `
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="clear-recent-btn">
+                <i class="fas fa-broom" style="margin-right: 5px;"></i> <span data-i18n="actions.clear_recent">Limpiar recientes</span>
+            </button>
+        </div>
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="grid-view-btn" title="Vista de cuadrícula">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="toggle-btn" id="list-view-btn" title="Vista de lista">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    `;
+    elements.actionsBar.style.display = 'flex';
+    
+    // Add event listener for clear button
+    document.getElementById('clear-recent-btn').addEventListener('click', () => {
+        if (window.recent) {
+            window.recent.clearRecentFiles();
+            window.recent.displayRecentFiles();
+            window.ui.showNotification('Limpieza completada', 'Se ha limpiado el historial de archivos recientes');
+        }
+    });
+    
+    // Restore view toggle event listeners
+    document.getElementById('grid-view-btn').addEventListener('click', ui.switchToGridView);
+    document.getElementById('list-view-btn').addEventListener('click', ui.switchToListView);
+    
+    // Update cached elements
+    elements.gridViewBtn = document.getElementById('grid-view-btn');
+    elements.listViewBtn = document.getElementById('list-view-btn');
+    
+    // Show standard files containers
+    const filesGrid = document.getElementById('files-grid');
+    const filesListView = document.getElementById('files-list-view');
+    
+    if (filesGrid) {
+        filesGrid.style.display = app.currentView === 'grid' ? 'grid' : 'none';
+    }
+    
+    if (filesListView) {
+        filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
+    }
+    
+    // Check if recent files module is initialized
+    if (window.recent) {
+        // Display recent files
+        window.recent.displayRecentFiles();
+    } else {
+        console.error('Recent files module not loaded or initialized');
+        
+        // Show error in UI
+        const filesGrid = document.getElementById('files-grid');
+        if (filesGrid) {
+            filesGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f44336; margin-bottom: 16px;"></i>
+                    <p>Error al cargar el módulo de archivos recientes</p>
+                </div>
+            `;
+        }
+    }
+}
+
 // Expose view switching functions globally
 window.switchToFilesView = switchToFilesView;
 window.switchToSharedView = switchToSharedView;
 window.switchToFavoritesView = switchToFavoritesView;
+window.switchToRecentFilesView = switchToRecentFilesView;
 
 /**
  * Check if user is authenticated and load user's home folder

@@ -138,12 +138,14 @@
     "move_to": "Mover a",
     "delete": "Eliminar",
     "download": "Descargar",
+    "view": "Ver",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
     "share": "Compartir",
     "copy": "Copiar",
     "notify": "Notificar",
-    "send": "Enviar"
+    "send": "Enviar",
+    "clear_recent": "Limpiar recientes"
   },
   "files": {
     "name": "Nombre",
