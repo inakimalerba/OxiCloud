@@ -168,6 +168,11 @@ pub fn create_api_routes(
         .route("/{id}/move", put(FolderHandler::move_folder))
         .with_state(folder_service.clone());
         
+    // Special route for ZIP download that requires AppState instead of just FolderService
+    let folder_zip_router = Router::new()
+        .route("/{id}/download", get(FolderHandler::download_folder_zip))
+        .with_state(app_state.clone());
+        
     // Create folder operations that use trash separately
     let folders_ops_router = Router::new()
         .route("/{id}", delete(|
@@ -200,7 +205,7 @@ pub fn create_api_routes(
         }));
         
     // Merge the routers
-    let folders_router = folders_basic_router.merge(folders_ops_router);
+    let folders_router = folders_basic_router.merge(folders_ops_router).merge(folder_zip_router);
         
     // Create file routes for basic operations and trash-enabled delete
     let basic_file_router = Router::new()

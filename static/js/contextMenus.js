@@ -10,6 +10,16 @@ const contextMenus = {
      */
     assignMenuEvents() {
         // Folder context menu options
+        document.getElementById('download-folder-option').addEventListener('click', () => {
+            if (window.app.contextMenuTargetFolder) {
+                window.fileOps.downloadFolder(
+                    window.app.contextMenuTargetFolder.id,
+                    window.app.contextMenuTargetFolder.name
+                );
+            }
+            window.ui.closeContextMenu();
+        });
+        
         document.getElementById('rename-folder-option').addEventListener('click', () => {
             if (window.app.contextMenuTargetFolder) {
                 this.showRenameDialog(window.app.contextMenuTargetFolder);
@@ -42,6 +52,16 @@ const contextMenus = {
         });
 
         // File context menu options
+        document.getElementById('download-file-option').addEventListener('click', () => {
+            if (window.app.contextMenuTargetFile) {
+                window.fileOps.downloadFile(
+                    window.app.contextMenuTargetFile.id,
+                    window.app.contextMenuTargetFile.name
+                );
+            }
+            window.ui.closeFileContextMenu();
+        });
+        
         document.getElementById('move-file-option').addEventListener('click', () => {
             if (window.app.contextMenuTargetFile) {
                 this.showMoveDialog(window.app.contextMenuTargetFile, 'file');

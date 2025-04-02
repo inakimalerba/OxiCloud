@@ -21,4 +21,3 @@ pub use file_path_resolver::FilePathResolver;
 pub use file_fs_read_repository::FileFsReadRepository;
 pub use file_fs_write_repository::FileFsWriteRepository;
 pub use pg::{UserPgRepository, SessionPgRepository};
-pub use share_fs_repository::ShareFsRepository;

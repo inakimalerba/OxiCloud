@@ -1,7 +1,8 @@
 use std::sync::Arc;
+use std::collections::HashMap;
 use axum::{
     extract::{Path, State, Query},
-    http::StatusCode,
+    http::{StatusCode, header, HeaderName, HeaderValue, Response},
     response::IntoResponse,
     Json,
 };
@@ -13,6 +14,7 @@ use crate::common::errors::ErrorKind;
 use crate::application::ports::inbound::FolderUseCase;
 use crate::common::di::AppState as GlobalAppState;
 use crate::interfaces::middleware::auth::AuthUser;
+use crate::infrastructure::services::zip_service::ZipService;
 
 type AppState = Arc<FolderService>;
 
@@ -209,6 +211,81 @@ impl FolderHandler {
                 
                 (status, Json(serde_json::json!({
                     "error": format!("Error deleting folder: {}", err)
+                }))).into_response()
+            }
+        }
+    }
+    
+    /// Downloads a folder as a ZIP file
+    pub async fn download_folder_zip(
+        State(state): State<GlobalAppState>,
+        Path(id): Path<String>,
+        Query(_params): Query<HashMap<String, String>>,
+    ) -> impl IntoResponse {
+        tracing::info!("Downloading folder as ZIP: {}", id);
+        
+        // Get folder information first to check it exists and get name
+        let folder_service = &state.applications.folder_service;
+        let file_service = &state.applications.file_service;
+        
+        match folder_service.get_folder(&id).await {
+            Ok(folder) => {
+                tracing::info!("Preparing ZIP for folder: {} ({})", folder.name, id);
+                
+                // Create ZIP service with the required services
+                let zip_service = ZipService::new(
+                    file_service.clone(),
+                    folder_service.clone()
+                );
+                
+                // Create the ZIP file
+                match zip_service.create_folder_zip(&id, &folder.name).await {
+                    Ok(zip_data) => {
+                        tracing::info!("ZIP file created successfully, size: {} bytes", zip_data.len());
+                        
+                        // Setup headers for download
+                        let filename = format!("{}.zip", folder.name);
+                        let content_disposition = format!("attachment; filename=\"{}\"", filename);
+                        
+                        // Build response with the ZIP data
+                        let mut headers = HashMap::new();
+                        headers.insert(header::CONTENT_TYPE.to_string(), "application/zip".to_string());
+                        headers.insert(header::CONTENT_DISPOSITION.to_string(), content_disposition);
+                        headers.insert(header::CONTENT_LENGTH.to_string(), zip_data.len().to_string());
+                        
+                        // Build the response
+                        let mut response = Response::builder()
+                            .status(StatusCode::OK)
+                            .body(axum::body::Body::from(zip_data))
+                            .unwrap();
+                        
+                        // Add headers to response
+                        for (name, value) in headers {
+                            response.headers_mut().insert(
+                                HeaderName::from_bytes(name.as_bytes()).unwrap(),
+                                HeaderValue::from_str(&value).unwrap()
+                            );
+                        }
+                        
+                        response
+                    },
+                    Err(err) => {
+                        tracing::error!("Error creating ZIP file: {}", err);
+                        (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                            "error": format!("Error creating ZIP file: {}", err)
+                        }))).into_response()
+                    }
+                }
+            },
+            Err(err) => {
+                tracing::error!("Folder not found: {}", err);
+                let status = match err.kind {
+                    ErrorKind::NotFound => StatusCode::NOT_FOUND,
+                    _ => StatusCode::INTERNAL_SERVER_ERROR,
+                };
+                
+                (status, Json(serde_json::json!({
+                    "error": format!("Error finding folder: {}", err)
                 }))).into_response()
             }
         }

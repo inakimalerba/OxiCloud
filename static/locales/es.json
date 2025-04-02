@@ -137,6 +137,7 @@
     "move": "Mover a...",
     "move_to": "Mover a",
     "delete": "Eliminar",
+    "download": "Descargar",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
     "share": "Compartir",
@@ -243,5 +244,12 @@
     "admin_password": "Contraseña administrador",
     "create_admin": "Crear administrador",
     "back_to_login": "¿Ya está configurado?"
+  },
+  "viewer": {
+    "unsupported_file": "Este tipo de archivo no se puede previsualizar.",
+    "download_file": "Descargar archivo",
+    "zoom_in": "Acercar",
+    "zoom_out": "Alejar",
+    "zoom_reset": "Restablecer zoom"
   }
 }
