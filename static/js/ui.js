@@ -18,6 +18,9 @@ const ui = {
                 <div class="context-menu-item" id="download-folder-option">
                     <i class="fas fa-download"></i> <span data-i18n="actions.download">Descargar</span>
                 </div>
+                <div class="context-menu-item" id="favorite-folder-option">
+                    <i class="fas fa-star"></i> <span data-i18n="actions.favorite">Añadir a favoritos</span>
+                </div>
                 <div class="context-menu-item" id="rename-folder-option">
                     <i class="fas fa-edit"></i> <span data-i18n="actions.rename">Renombrar</span>
                 </div>
@@ -42,6 +45,9 @@ const ui = {
             fileMenu.innerHTML = `
                 <div class="context-menu-item" id="download-file-option">
                     <i class="fas fa-download"></i> <span data-i18n="actions.download">Descargar</span>
+                </div>
+                <div class="context-menu-item" id="favorite-file-option">
+                    <i class="fas fa-star"></i> <span data-i18n="actions.favorite">Añadir a favoritos</span>
                 </div>
                 <div class="context-menu-item" id="share-file-option">
                     <i class="fas fa-share-alt"></i> <span data-i18n="actions.share">Compartir</span>

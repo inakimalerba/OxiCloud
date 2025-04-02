@@ -256,7 +256,7 @@ class InlineViewer {
     message.innerHTML = `
       <div class="inline-viewer-icon"><i class="fas fa-exclamation-triangle"></i></div>
       <div class="inline-viewer-text">
-        <p>Error al cargar el archivo.</p>
+        <p>Error al cargar el archivo.</p>`
         <p>Intenta descargarlo directamente.</p>
       </div>
     `;

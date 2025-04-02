@@ -13,6 +13,7 @@ pub mod auth_application_service;
 pub mod trash_service;
 pub mod search_service;
 pub mod share_service;
+pub mod favorites_service;
 
 #[cfg(test)]
 mod trash_service_test;

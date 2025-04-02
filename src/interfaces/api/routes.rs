@@ -25,6 +25,7 @@ use crate::application::services::batch_operations::BatchOperationService;
 use crate::application::ports::trash_ports::TrashUseCase;
 use crate::application::ports::inbound::SearchUseCase;
 use crate::application::ports::share_ports::ShareUseCase;
+use crate::application::ports::favorites_ports::FavoritesUseCase;
 
 use crate::interfaces::api::handlers::folder_handler::FolderHandler;
 use crate::interfaces::api::handlers::file_handler::FileHandler;
@@ -43,6 +44,7 @@ pub fn create_api_routes(
     trash_service: Option<Arc<dyn TrashUseCase>>,
     search_service: Option<Arc<dyn SearchUseCase>>,
     share_service: Option<Arc<dyn ShareUseCase>>,
+    favorites_service: Option<Arc<dyn FavoritesUseCase>>,
 ) -> Router<crate::common::di::AppState> {
     // Create a simplified AppState for the trash view
     // Setup required components for repository construction
@@ -106,11 +108,13 @@ pub fn create_api_routes(
             trash_service: trash_service.clone(), // Include the trash service here too for consistency
             search_service: search_service.clone(), // Include the search service
             share_service: share_service.clone(), // Include the share service
+            favorites_service: favorites_service.clone(), // Include the favorites service
         },
         db_pool: None,
         auth_service: None,
         trash_service: trash_service.clone(), // This is the important part - include the trash service
-        share_service: share_service.clone() // Include the share service for routes
+        share_service: share_service.clone(), // Include the share service for routes
+        favorites_service: favorites_service.clone() // Include the favorites service for routes
     };
     // Inicializar el servicio de operaciones por lotes
     let batch_service = Arc::new(BatchOperationService::default(
@@ -324,6 +328,19 @@ pub fn create_api_routes(
     };
 
     // Create a router without the i18n routes
+    // Create routes for favorites if the service is available
+    let favorites_router = if let Some(favorites_service) = favorites_service.clone() {
+        use crate::interfaces::api::handlers::favorites_handler;
+        
+        Router::new()
+            .route("/", get(favorites_handler::get_favorites))
+            .route("/{item_type}/{item_id}", post(favorites_handler::add_favorite))
+            .route("/{item_type}/{item_id}", delete(favorites_handler::remove_favorite))
+            .with_state(favorites_service.clone())
+    } else {
+        Router::new()
+    };
+
     let mut router = Router::new()
         .nest("/folders", folders_router)
         .nest("/files", files_router)
@@ -331,6 +348,7 @@ pub fn create_api_routes(
         .nest("/search", search_router)
         .nest("/shares", share_router)
         .nest("/s", public_share_router)
+        .nest("/favorites", favorites_router)
         ;
     
     // Store the share service in app_state for future use

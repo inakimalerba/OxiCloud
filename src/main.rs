@@ -46,6 +46,7 @@ use application::services::file_service::FileService;
 use application::services::i18n_application_service::I18nApplicationService;
 use application::services::storage_mediator::FileSystemStorageMediator;
 use application::services::share_service::ShareService;
+use application::services::favorites_service::FavoritesService;
 use domain::services::path_service::PathService;
 use infrastructure::repositories::folder_fs_repository::FolderFsRepository;
 use infrastructure::repositories::file_fs_repository::FileFsRepository;
@@ -614,6 +615,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
+    // Initialize favorites service if database is available
+    let favorites_service: Option<Arc<dyn application::ports::favorites_ports::FavoritesUseCase>> = 
+    if let Some(ref pool) = db_pool {
+        // Create a new favorites service with the database pool
+        let favorites_service = Arc::new(FavoritesService::new(
+            pool.clone()
+        ));
+        
+        tracing::info!("Favorites service initialized successfully");
+        Some(favorites_service)
+    } else {
+        tracing::info!("Favorites service is disabled (requires database connection)");
+        None
+    };
+
     let application_services = common::di::ApplicationServices {
         folder_service: folder_service.clone(),
         file_service: file_service.clone(),
@@ -625,6 +641,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         trash_service: trash_service.clone(),
         search_service: search_service.clone(),
         share_service: share_service.clone(),
+        favorites_service: favorites_service.clone(),
     };
     
     // Create the AppState without Arc first
@@ -645,11 +662,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         app_state = app_state.with_auth_services(services);
     }
     
+    // Add favorites service if available
+    if let Some(service) = favorites_service.clone() {
+        app_state = app_state.with_favorites_service(service);
+    }
+    
     // Wrap in Arc after all modifications
     let app_state = Arc::new(app_state);
 
     // Build application router
-    let api_routes = create_api_routes(folder_service, file_service, Some(i18n_service), trash_service, search_service, share_service);
+    let api_routes = create_api_routes(folder_service, file_service, Some(i18n_service), trash_service, search_service, share_service, favorites_service);
     let web_routes = create_web_routes();
     
     // Build the app router

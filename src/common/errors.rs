@@ -238,6 +238,8 @@ macro_rules! impl_from_error {
 // Implementación para errores estándar comunes
 impl_from_error!(std::io::Error, "IO");
 impl_from_error!(serde_json::Error, "Serialization");
+impl_from_error!(sqlx::Error, "Database");
+impl_from_error!(uuid::Error, "UUID");
 
 // Error para capas HTTP/API
 #[derive(Debug)]
