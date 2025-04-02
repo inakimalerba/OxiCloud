@@ -272,7 +272,9 @@ const fileSharing = {
         document.querySelectorAll('.nav-item').forEach(item => {
             if (item.querySelector('span').getAttribute('data-i18n') === 'nav.shared') {
                 item.addEventListener('click', () => {
-                    window.location.href = '/shared.html';
+                    if (window.switchToSharedView) {
+                        window.switchToSharedView();
+                    }
                 });
             }
         });

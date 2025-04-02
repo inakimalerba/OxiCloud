@@ -13,7 +13,8 @@ const app = {
     selectedTargetFolderId: "",     // Selected target folder for move operations
     moveDialogMode: 'file',         // Move dialog mode: 'file' or 'folder'
     isTrashView: false,    // Whether we're in trash view
-    currentSection: 'files', // Current section: 'files' or 'trash'
+    isSharedView: false,   // Whether we're in shared view
+    currentSection: 'files', // Current section: 'files', 'trash' or 'shared'
     isSearchMode: false,    // Whether we're in search mode
     // File sharing related properties
     shareDialogItem: null,          // Item being shared in share dialog
@@ -167,16 +168,39 @@ function setupEventListeners() {
             
             // Check if this is the shared item
             if (item.querySelector('span').getAttribute('data-i18n') === 'nav.shared') {
-                // Navigate to the shared page
-                window.location.href = '/shared.html';
+                // Switch to shared view
+                switchToSharedView();
                 return;
             }
             
             // Check if this is the trash item
             if (item === elements.trashBtn) {
+                // Hide shared view if active
+                if (app.isSharedView) {
+                    // Hide shared view
+                    if (window.sharedView) {
+                        window.sharedView.hide();
+                    }
+                    
+                    // Reset shared view flag
+                    app.isSharedView = false;
+                    
+                    // Clean up shared containers if they exist
+                    const sharedContainer = document.getElementById('shared-container');
+                    if (sharedContainer) {
+                        sharedContainer.style.display = 'none';
+                    }
+                }
+                
                 // Show trash view
                 app.isTrashView = true;
                 app.currentSection = 'trash';
+                
+                // Show files containers (to be filled with trash)
+                const filesGrid = document.getElementById('files-grid');
+                const filesListView = document.getElementById('files-list-view');
+                if (filesGrid) filesGrid.style.display = app.currentView === 'grid' ? 'grid' : 'none';
+                if (filesListView) filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
                 
                 // Update UI
                 elements.pageTitle.textContent = window.i18n ? window.i18n.t('nav.trash') : 'Papelera';
@@ -188,6 +212,7 @@ function setupEventListeners() {
                         </button>
                     </div>
                 `;
+                elements.actionsBar.style.display = 'flex';
                 
                 // Add event listener to empty trash button
                 document.getElementById('empty-trash-btn').addEventListener('click', async () => {
@@ -199,6 +224,23 @@ function setupEventListeners() {
                 // Load trash items
                 loadTrashItems();
             } else {
+                // Check if we need to reset shared view
+                if (app.isSharedView) {
+                    // Hide shared view
+                    if (window.sharedView) {
+                        window.sharedView.hide();
+                    }
+                    
+                    // Reset shared view flag
+                    app.isSharedView = false;
+                    
+                    // Clean up shared containers if they exist
+                    const sharedContainer = document.getElementById('shared-container');
+                    if (sharedContainer) {
+                        sharedContainer.style.display = 'none';
+                    }
+                }
+                
                 // Show regular files view
                 app.isTrashView = false;
                 app.currentSection = 'files';
@@ -223,6 +265,13 @@ function setupEventListeners() {
                         </button>
                     </div>
                 `;
+                elements.actionsBar.style.display = 'flex';
+                
+                // Show files containers
+                const filesGrid = document.getElementById('files-grid');
+                const filesListView = document.getElementById('files-list-view');
+                if (filesGrid) filesGrid.style.display = app.currentView === 'grid' ? 'grid' : 'none';
+                if (filesListView) filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
                 
                 // Restore event listeners
                 document.getElementById('upload-btn').addEventListener('click', () => {
@@ -631,6 +680,136 @@ window.selectFolder = (id, name) => {
     ui.updateBreadcrumb(name);
     loadFiles();
 };
+
+/**
+ * Switch to the shared view
+ */
+function switchToSharedView() {
+    // Hide trash view if active
+    app.isTrashView = false;
+    
+    // Set shared view as active
+    app.isSharedView = true;
+    app.currentSection = 'shared';
+    
+    // Remove active class from all nav items
+    elements.navItems.forEach(navItem => navItem.classList.remove('active'));
+    
+    // Find shared nav item and make it active
+    const sharedNavItem = document.querySelector('.nav-item:nth-child(2)');
+    if (sharedNavItem) {
+        sharedNavItem.classList.add('active');
+    }
+    
+    // Update UI
+    elements.pageTitle.textContent = window.i18n ? window.i18n.t('nav.shared') : 'Compartidos';
+    
+    // Clear breadcrumb and show root
+    ui.updateBreadcrumb(window.i18n ? window.i18n.t('nav.shared') : 'Compartidos');
+    
+    // Hide standard actions bar
+    if (elements.actionsBar) {
+        elements.actionsBar.style.display = 'none';
+    }
+    
+    // Init and show shared view
+    if (window.sharedView) {
+        window.sharedView.init();
+        window.sharedView.show();
+    }
+}
+
+/**
+ * Switch back to the files view
+ */
+function switchToFilesView() {
+    // Reset view flags
+    app.isTrashView = false;
+    app.isSharedView = false;
+    app.currentSection = 'files';
+    
+    // Update UI
+    elements.pageTitle.textContent = window.i18n ? window.i18n.t('nav.files') : 'Archivos';
+    
+    // Remove active class from all nav items
+    elements.navItems.forEach(navItem => navItem.classList.remove('active'));
+    
+    // Make files nav item active
+    const filesNavItem = document.querySelector('.nav-item:first-child');
+    if (filesNavItem) {
+        filesNavItem.classList.add('active');
+    }
+    
+    // Reset UI
+    elements.actionsBar.innerHTML = `
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="upload-btn">
+                <i class="fas fa-upload" style="margin-right: 5px;"></i> <span data-i18n="actions.upload">Subir</span>
+            </button>
+            <button class="btn btn-secondary" id="new-folder-btn">
+                <i class="fas fa-folder-plus" style="margin-right: 5px;"></i> <span data-i18n="actions.new_folder">Nueva carpeta</span>
+            </button>
+        </div>
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="grid-view-btn" title="Vista de cuadrícula">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="toggle-btn" id="list-view-btn" title="Vista de lista">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    `;
+    elements.actionsBar.style.display = 'flex';
+    
+    // Restore event listeners
+    document.getElementById('upload-btn').addEventListener('click', () => {
+        elements.dropzone.style.display = elements.dropzone.style.display === 'none' ? 'block' : 'none';
+        if (elements.dropzone.style.display === 'block') {
+            elements.fileInput.click();
+        }
+    });
+    
+    document.getElementById('new-folder-btn').addEventListener('click', () => {
+        const folderName = prompt(window.i18n ? window.i18n.t('dialogs.new_name') : 'Nombre de la carpeta:');
+        if (folderName) {
+            fileOps.createFolder(folderName);
+        }
+    });
+    
+    document.getElementById('grid-view-btn').addEventListener('click', ui.switchToGridView);
+    document.getElementById('list-view-btn').addEventListener('click', ui.switchToListView);
+    
+    // Restore cached elements
+    elements.uploadBtn = document.getElementById('upload-btn');
+    elements.newFolderBtn = document.getElementById('new-folder-btn');
+    elements.gridViewBtn = document.getElementById('grid-view-btn');
+    elements.listViewBtn = document.getElementById('list-view-btn');
+    
+    // Hide shared view if it exists
+    if (window.sharedView) {
+        window.sharedView.hide();
+    }
+    
+    // Show standard files container
+    const filesGrid = document.getElementById('files-grid');
+    if (filesGrid) {
+        filesGrid.style.display = app.currentView === 'grid' ? 'grid' : 'none';
+    }
+    
+    const filesListView = document.getElementById('files-list-view');
+    if (filesListView) {
+        filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
+    }
+    
+    // Reset path and load files
+    app.currentPath = '';
+    ui.updateBreadcrumb('');
+    loadFiles();
+}
+
+// Expose view switching functions globally
+window.switchToFilesView = switchToFilesView;
+window.switchToSharedView = switchToSharedView;
 
 /**
  * Check if user is authenticated and load user's home folder

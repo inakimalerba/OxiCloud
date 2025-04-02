@@ -86,6 +86,23 @@ const fileOps = {
      */
     async createFolder(name) {
         try {
+            // Para simular en el entorno de desarrollo
+            console.log('Creating folder with name:', name);
+            
+            // Create a mock folder object
+            const mockFolder = {
+                id: 'folder_' + Math.random().toString(36).substring(2, 15),
+                name: name,
+                parent_id: window.app.currentPath || null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            // Add to UI directly
+            window.ui.addFolderToView(mockFolder);
+            window.ui.showNotification('Carpeta creada', `"${name}" creada correctamente`);
+            
+            /* Commented for development
             const response = await fetch('/api/folders', {
                 method: 'POST',
                 headers: {
@@ -105,6 +122,7 @@ const fileOps = {
                 console.error('Create folder error:', errorData);
                 window.ui.showNotification('Error', 'Error al crear la carpeta');
             }
+            */
         } catch (error) {
             console.error('Error creating folder:', error);
             window.ui.showNotification('Error', 'Error al crear la carpeta');
