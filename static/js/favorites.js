@@ -27,18 +27,32 @@ const favorites = {
      */
     async checkBackendAvailability() {
         try {
+            // Add error handling to prevent console errors by catching 500 errors
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+            
             const response = await fetch('/api/favorites', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('oxicloud_token')}`
-                }
+                },
+                signal: controller.signal
+            }).catch(err => {
+                console.warn('Network error checking favorites API:', err);
+                return { ok: false, status: 0 };
             });
             
-            this.backendApiAvailable = response.ok;
-            console.log(`Backend favorites API ${this.backendApiAvailable ? 'is' : 'is not'} available`);
+            clearTimeout(timeoutId);
             
-            // If backend API is available, sync local favorites with server
-            if (this.backendApiAvailable) {
+            // Check if the response indicates the API is properly implemented
+            this.backendApiAvailable = response.ok;
+            
+            if (!response.ok) {
+                console.log(`Backend favorites API returned status ${response.status} - using local storage fallback`);
+                this.backendApiAvailable = false;
+            } else {
+                console.log('Backend favorites API is available');
+                // If backend API is available, sync local favorites with server
                 this.syncWithServer();
             }
         } catch (error) {
