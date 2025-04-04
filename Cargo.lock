@@ -1657,11 +1657,13 @@ dependencies = [
  "flate2",
  "futures",
  "http-body 0.4.6",
+ "http-body-util",
  "hyper",
  "jsonwebtoken",
  "mime_guess",
  "mockall",
  "pin-project-lite",
+ "quick-xml",
  "rand",
  "rand_core",
  "reqwest",
@@ -1678,6 +1680,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
  "zip",
 ]
@@ -1864,6 +1867,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eff6510e86862b57b210fd8cbe8ed3f0d7d600b9c2863cd4549a2e033c66e956"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

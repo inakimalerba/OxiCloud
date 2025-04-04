@@ -285,6 +285,18 @@ impl AppError {
     pub fn internal_error(message: impl Into<String>) -> Self {
         Self::new(axum::http::StatusCode::INTERNAL_SERVER_ERROR, message, "InternalError")
     }
+    
+    pub fn method_not_allowed(message: impl Into<String>) -> Self {
+        Self::new(axum::http::StatusCode::METHOD_NOT_ALLOWED, message, "MethodNotAllowed")
+    }
+    
+    pub fn conflict(message: impl Into<String>) -> Self {
+        Self::new(axum::http::StatusCode::CONFLICT, message, "Conflict")
+    }
+    
+    pub fn unsupported_media_type(message: impl Into<String>) -> Self {
+        Self::new(axum::http::StatusCode::UNSUPPORTED_MEDIA_TYPE, message, "UnsupportedMediaType")
+    }
 }
 
 impl From<DomainError> for AppError {

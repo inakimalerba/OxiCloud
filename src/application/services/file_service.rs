@@ -140,6 +140,18 @@ impl FileService {
                 Ok(FileDto::empty())
             }
             
+            async fn get_file_by_path(&self, _path: &str) -> Result<FileDto, DomainError> {
+                Ok(FileDto::empty())
+            }
+            
+            async fn create_file(&self, _parent_path: &str, _filename: &str, _content: &[u8], _content_type: &str) -> Result<FileDto, DomainError> {
+                Ok(FileDto::empty())
+            }
+            
+            async fn update_file(&self, _path: &str, _content: &[u8]) -> Result<(), DomainError> {
+                Ok(())
+            }
+            
             async fn list_files(&self, _folder_id: Option<&str>) -> Result<Vec<FileDto>, DomainError> {
                 Ok(vec![])
             }
@@ -184,6 +196,76 @@ impl FileService {
         let file = self.file_repository.get_file(id).await
             .map_err(FileServiceError::from)?;
         Ok(FileDto::from(file))
+    }
+    
+    /// Gets a file by path (needed for WebDAV)
+    pub async fn get_file_by_path(&self, path: &str) -> FileServiceResult<FileDto> {
+        // This is a simple implementation for WebDAV support
+        // First, normalize the path (remove leading/trailing slashes)
+        let path = path.trim_start_matches('/').trim_end_matches('/');
+        
+        // List all files and find the one with matching path
+        let all_files = self.list_files(None).await?;
+        
+        for file in all_files {
+            let file_path = file.path.trim_start_matches('/').trim_end_matches('/');
+            if file_path == path || file_path.ends_with(&format!("/{}", path)) || path.ends_with(&format!("/{}", file_path)) {
+                return Ok(file);
+            }
+        }
+        
+        // If no file found, return an error
+        Err(FileServiceError::NotFound(format!("File not found at path: {}", path)))
+    }
+    
+    /// Creates or updates a file at a specific path (needed for WebDAV)
+    pub async fn create_file(&self, parent_path: &str, filename: &str, content: &[u8], content_type: &str) -> FileServiceResult<FileDto> {
+        // Get parent folder ID if parent path is not empty
+        let parent_id = if !parent_path.is_empty() {
+            match self.file_repository.get_parent_folder_id(parent_path).await {
+                Ok(id) => Some(id),
+                Err(_) => None // If parent doesn't exist, use root
+            }
+        } else {
+            None // Root folder
+        };
+        
+        // Save the file with the provided filename and parent folder
+        let file = self.file_repository.save_file(
+            filename.to_string(), 
+            parent_id, 
+            content_type.to_string(), 
+            content.to_vec()
+        ).await.map_err(FileServiceError::from)?;
+        
+        Ok(FileDto::from(file))
+    }
+    
+    /// Updates an existing file (needed for WebDAV)
+    pub async fn update_file(&self, path: &str, content: &[u8]) -> FileServiceResult<()> {
+        // First, try to get the file by path
+        match self.get_file_by_path(path).await {
+            Ok(file) => {
+                // Update the file content
+                self.file_repository.update_file_content(&file.id, content.to_vec())
+                    .await
+                    .map_err(FileServiceError::from)
+            },
+            Err(_) => {
+                // If file doesn't exist, extract filename and parent path and create it
+                let path = path.trim_start_matches('/').trim_end_matches('/');
+                let (parent_path, filename) = if let Some(idx) = path.rfind('/') {
+                    (&path[..idx], &path[idx+1..])
+                } else {
+                    ("", path)
+                };
+                
+                // Create new file
+                self.create_file(parent_path, filename, content, "application/octet-stream").await?;
+                
+                Ok(())
+            }
+        }
     }
     
     /// Lists files in a folder
@@ -244,6 +326,21 @@ impl FileUseCase for FileService {
     
     async fn get_file(&self, id: &str) -> Result<FileDto, DomainError> {
         FileService::get_file(self, id).await
+            .map_err(DomainError::from)
+    }
+    
+    async fn get_file_by_path(&self, path: &str) -> Result<FileDto, DomainError> {
+        FileService::get_file_by_path(self, path).await
+            .map_err(DomainError::from)
+    }
+    
+    async fn create_file(&self, parent_path: &str, filename: &str, content: &[u8], content_type: &str) -> Result<FileDto, DomainError> {
+        FileService::create_file(self, parent_path, filename, content, content_type).await
+            .map_err(DomainError::from)
+    }
+    
+    async fn update_file(&self, path: &str, content: &[u8]) -> Result<(), DomainError> {
+        FileService::update_file(self, path, content).await
             .map_err(DomainError::from)
     }
     

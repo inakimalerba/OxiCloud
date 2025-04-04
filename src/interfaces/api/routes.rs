@@ -630,6 +630,15 @@ pub fn create_api_routes(
     if trash_service.is_some() {
         tracing::info!("Trash service is available - trash view is functional");
     }
+    
+    // Add WebDAV routes if needed
+    let webdav_enabled = true; // In production, you'd read this from a config
+    let router = if webdav_enabled {
+        use crate::interfaces::api::handlers::webdav_handler;
+        router.merge(webdav_handler::webdav_routes())
+    } else {
+        router
+    };
 
     router
         .layer(CompressionLayer::new())
