@@ -385,9 +385,32 @@ function setupEventListeners() {
  */
 async function loadFiles() {
     try {
-        let url = '/api/folders';
-        if (app.currentPath) {
-            // Use the correct endpoint for folder contents
+        // Always ensure a userHomeFolderId is set
+        if (!app.userHomeFolderId) {
+            // If we don't have a home folder ID yet, try to get the user's username
+            const USER_DATA_KEY = 'oxicloud_user';
+            const userData = JSON.parse(localStorage.getItem(USER_DATA_KEY) || '{}');
+            if (userData.username) {
+                // Find user's home folder
+                await findUserHomeFolder(userData.username);
+            }
+        }
+        
+        let url;
+        // ALWAYS use the userHomeFolderId (current folder or home folder) to avoid showing root
+        if (!app.currentPath || app.currentPath === '') {
+            // If at root, force user to their home folder
+            if (app.userHomeFolderId) {
+                url = `/api/folders/${app.userHomeFolderId}/contents`;
+                app.currentPath = app.userHomeFolderId;
+                ui.updateBreadcrumb(app.userHomeFolderName || 'Home');
+            } else {
+                // Emergency fallback - this should rarely happen but prevents errors
+                url = '/api/folders';
+                console.warn("Emergency fallback to root folder - this should not normally happen");
+            }
+        } else {
+            // Normal case - viewing subfolder contents
             url = `/api/folders/${app.currentPath}/contents`;
         }
         
@@ -440,7 +463,29 @@ async function loadFiles() {
         
         // Add folders (check if it's an array)
         const folderList = Array.isArray(folders) ? folders : [];
-        folderList.forEach(folder => {
+        
+        // Get user info for filtering
+        const USER_DATA_KEY = 'oxicloud_user';
+        const userData = JSON.parse(localStorage.getItem(USER_DATA_KEY) || '{}');
+        const username = userData.username || '';
+        
+        // Filter folders before adding them to the view
+        const visibleFolders = folderList.filter(folder => {
+            // Skip system folders (starting with dot) when at root
+            if (!app.currentPath && folder.name.startsWith('.')) {
+                return false;
+            }
+            
+            // Skip other users' folders when at root
+            if (!app.currentPath && folder.name.startsWith('Mi Carpeta - ') && !folder.name.includes(username)) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Add filtered folders to the view
+        visibleFolders.forEach(folder => {
             ui.addFolderToView(folder);
         });
         
@@ -852,9 +897,14 @@ function switchToFilesView() {
         filesListView.style.display = app.currentView === 'list' ? 'block' : 'none';
     }
     
-    // Reset path and load files
-    app.currentPath = '';
-    ui.updateBreadcrumb('');
+    // Use user's home folder instead of root path
+    if (app.userHomeFolderId) {
+        app.currentPath = app.userHomeFolderId;
+        ui.updateBreadcrumb(app.userHomeFolderName || 'Home');
+    } else {
+        // If no home folder is set, this will trigger finding it in loadFiles()
+        app.currentPath = '';
+    }
     loadFiles();
 }
 
@@ -1262,17 +1312,26 @@ async function findUserHomeFolder(username) {
                 console.log(`Found ${folderList.length} folders at root`);
                 
                 // Look for a folder with a name pattern that matches the user's home folder
-                // Typically named "Mi Carpeta - username"
+                // Only exact match "Mi Carpeta - username"
                 const homeFolderPattern = `Mi Carpeta - ${username}`;
-                let homeFolder = folderList.find(folder => folder.name === homeFolderPattern);
                 
-                // If exact match not found, try a more flexible match
-                if (!homeFolder) {
-                    homeFolder = folderList.find(folder => 
-                        folder.name.toLowerCase().includes(username.toLowerCase()) || 
-                        folder.name.startsWith('Mi Carpeta -')
-                    );
-                }
+                // Filter first to remove system folders like .trash that shouldn't be visible
+                const visibleFolders = folderList.filter(folder => {
+                    // Skip system folders (starting with dot)
+                    if (folder.name.startsWith('.')) {
+                        return false;
+                    }
+                    
+                    // Skip other users' folders
+                    if (folder.name.startsWith('Mi Carpeta - ') && !folder.name.includes(username)) {
+                        return false;
+                    }
+                    
+                    return true;
+                });
+                
+                // Find the user's home folder from filtered list
+                let homeFolder = visibleFolders.find(folder => folder.name === homeFolderPattern);
                 
                 if (homeFolder) {
                     console.log(`Found user's home folder: ${homeFolder.name} (${homeFolder.id})`);

@@ -362,12 +362,17 @@ const ui = {
             return window.i18n.t(key);
         };
         
+        // First determine if the current view is the user's home folder 
+        const isUserHomeFolder = username && window.app.userHomeFolderName && 
+            window.app.userHomeFolderName.includes(username) && 
+            folderName === window.app.userHomeFolderName;
+            
         // Set appropriate text for home item
-        if (username && folderName && folderName.includes(username)) {
+        if (isUserHomeFolder) {
             // If the current folder is the user's home folder, label it as "Home"
             homeItem.textContent = getTranslatedText('breadcrumb.home', 'Home');
         } else if (folderName && folderName.startsWith('Mi Carpeta')) {
-            // If the current folder is another user's home folder or a special folder, use its name
+            // If viewing a root folder but not the user's home folder, use its full name
             homeItem.textContent = folderName;
         } else {
             // Default - use "Home" label
