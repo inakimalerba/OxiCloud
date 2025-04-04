@@ -48,7 +48,7 @@ pub fn webdav_routes() -> Router<AppState> {
     // Create the router with a single catchall route
     // This will internally dispatch to the appropriate method handler
     Router::new()
-        .route("/webdav/*path", axum::routing::any(handle_webdav_methods))
+        .route("/webdav/{*path}", axum::routing::any(handle_webdav_methods))
 }
 
 async fn handle_webdav_methods(
