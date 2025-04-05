@@ -470,6 +470,89 @@ impl FileStoragePort for FileFsRepository {
             .await
             .map_err(|e| DomainError::internal_error("FileStorage", format!("Failed to get path for file with ID: {}: {}", id, e)))
     }
+    
+    async fn get_parent_folder_id(&self, path: &str) -> Result<String, DomainError> {
+        // Convert path string to StoragePath
+        let storage_path = StoragePath::from_string(path);
+        
+        // Get parent path
+        let parent_path = match storage_path.parent() {
+            Some(parent) => parent,
+            None => return Ok("root".to_string()), // Root folder
+        };
+        
+        // If it's an empty path (root), return root ID
+        if parent_path.is_empty() {
+            return Ok("root".to_string());
+        }
+        
+        // Try to get the ID for the parent path from the ID mapping service
+        let parent_id = self.id_mapping_service.get_or_create_id(&parent_path).await
+            .map_err(|e| DomainError::internal_error("FileStorage", 
+                format!("Failed to get parent folder ID for path: {}: {}", path, e)))?;
+                
+        Ok(parent_id)
+    }
+    
+    async fn update_file_content(&self, file_id: &str, content: Vec<u8>) -> Result<(), DomainError> {
+        // First get the file to make sure it exists and to get its path
+        let file = self.get_file_by_id(file_id).await
+            .map_err(|e| DomainError::internal_error("FileStorage", 
+                format!("Failed to get file for update: {}: {}", file_id, e)))?;
+        
+        // Get the file path for writing
+        let file_path = FileStoragePort::get_file_path(self, file_id).await
+            .map_err(|e| DomainError::internal_error("FileStorage", 
+                format!("Failed to get file path for update: {}: {}", file_id, e)))?;
+        
+        // Resolve to actual filesystem path
+        let physical_path = self.storage_mediator.resolve_storage_path(&file_path);
+        
+        // Write the content to the file
+        std::fs::write(&physical_path, content)
+            .map_err(|e| DomainError::internal_error("FileStorage", 
+                format!("Failed to write updated content to file: {}: {}", file_id, e)))?;
+                
+        // Get the metadata and add it to cache if available
+        if let Some(metadata) = std::fs::metadata(&physical_path).ok() {
+            // Create a FileMetadata instance and update the cache
+            use crate::infrastructure::services::file_metadata_cache::FileMetadata;
+            use crate::infrastructure::services::file_metadata_cache::CacheEntryType;
+            use std::time::{SystemTime, UNIX_EPOCH};
+            use std::time::Duration;
+            
+            // Get modified and created times
+            let created_at = metadata.created()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs());
+                
+            let modified_at = metadata.modified()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs());
+                
+            // Default TTL
+            let ttl = Duration::from_secs(60); // 1 minute
+            
+            // Create FileMetadata instance
+            let file_metadata = FileMetadata::new(
+                physical_path.clone(),
+                true,  // exists
+                CacheEntryType::File,
+                Some(metadata.len()),
+                Some(file.mime_type().to_string()),
+                created_at,
+                modified_at,
+                ttl,
+            );
+            
+            // Update the cache
+            self.metadata_cache.update_cache(file_metadata).await;
+        }
+        
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -518,6 +601,63 @@ impl FileRepository for FileFsRepository {
                 Err(e)
             }
         }
+    }
+    
+    #[instrument(skip(self, content))]
+    async fn update_file_content(&self, file_id: &str, content: Vec<u8>) -> FileRepositoryResult<()> {
+        tracing::info!("FileRepository::update_file_content called for file ID: {}", file_id);
+        
+        // Get the file info to verify it exists and get its path
+        let file = self.get_file_by_id(file_id).await?;
+        
+        // Get the file path
+        let storage_path = FileRepository::get_file_path(self, file_id).await?;
+        let physical_path = self.path_service.resolve_path(&storage_path);
+        
+        // Write the content to the file
+        std::fs::write(&physical_path, &content)
+            .map_err(|e| FileRepositoryError::IoError(e))?;
+            
+        // Get the metadata and add it to cache if available
+        if let Some(metadata) = std::fs::metadata(&physical_path).ok() {
+            // Create a FileMetadata instance and update the cache
+            use crate::infrastructure::services::file_metadata_cache::FileMetadata;
+            use crate::infrastructure::services::file_metadata_cache::CacheEntryType;
+            use std::time::{SystemTime, UNIX_EPOCH};
+            use std::time::Duration;
+            
+            // Get modified and created times
+            let created_at = metadata.created()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs());
+                
+            let modified_at = metadata.modified()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs());
+                
+            // Default TTL
+            let ttl = Duration::from_secs(60); // 1 minute
+            
+            // Create FileMetadata instance
+            let file_metadata = FileMetadata::new(
+                physical_path.clone(),
+                true,  // exists
+                CacheEntryType::File,
+                Some(metadata.len()),
+                Some(file.mime_type().to_string()),
+                created_at,
+                modified_at,
+                ttl,
+            );
+            
+            // Update the cache
+            self.metadata_cache.update_cache(file_metadata).await;
+        }
+        
+        tracing::info!("File content updated successfully: {}", file_id);
+        Ok(())
     }
     async fn save_file_from_bytes(
         &self,

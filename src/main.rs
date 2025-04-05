@@ -358,6 +358,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
+        
+        async fn update_file_content(&self, file_id: &str, content: Vec<u8>) -> domain::repositories::file_repository::FileRepositoryResult<()> {
+            tracing::info!("Updating content for file: {}", file_id);
+            
+            self.repo.update_file_content(file_id, content)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to update file content: {}", e);
+                    domain::repositories::file_repository::FileRepositoryError::Other(format!("Failed to update file content: {}", e))
+                })
+        }
     }
     
     struct DomainFolderRepoAdapter {

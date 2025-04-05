@@ -8,7 +8,7 @@ pub mod search_handler;
 pub mod share_handler;
 pub mod favorites_handler;
 pub mod recent_handler;
+pub mod webdav_handler;
 
 /// Tipo de resultado para controladores de API
 pub type ApiResult<T> = Result<T, (axum::http::StatusCode, String)>;
-

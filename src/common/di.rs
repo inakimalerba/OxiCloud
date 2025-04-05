@@ -482,6 +482,14 @@ impl Default for AppState {
             async fn get_file_path(&self, _id: &str) -> Result<crate::domain::services::path_service::StoragePath, crate::common::errors::DomainError> {
                 Ok(crate::domain::services::path_service::StoragePath::from_string("/"))
             }
+            
+            async fn get_parent_folder_id(&self, _path: &str) -> Result<String, crate::common::errors::DomainError> {
+                Ok("root".to_string())
+            }
+            
+            async fn update_file_content(&self, _file_id: &str, _content: Vec<u8>) -> Result<(), crate::common::errors::DomainError> {
+                Ok(())
+            }
         }
         
         struct DummyFolderStoragePort;
@@ -616,6 +624,18 @@ impl Default for AppState {
             
             async fn get_file(&self, _id: &str) -> Result<crate::application::dtos::file_dto::FileDto, crate::common::errors::DomainError> {
                 Ok(crate::application::dtos::file_dto::FileDto::default())
+            }
+            
+            async fn get_file_by_path(&self, _path: &str) -> Result<crate::application::dtos::file_dto::FileDto, crate::common::errors::DomainError> {
+                Ok(crate::application::dtos::file_dto::FileDto::default())
+            }
+            
+            async fn create_file(&self, _parent_path: &str, _filename: &str, _content: &[u8], _content_type: &str) -> Result<crate::application::dtos::file_dto::FileDto, crate::common::errors::DomainError> {
+                Ok(crate::application::dtos::file_dto::FileDto::default())
+            }
+            
+            async fn update_file(&self, _path: &str, _content: &[u8]) -> Result<(), crate::common::errors::DomainError> {
+                Ok(())
             }
             
             async fn list_files(&self, _folder_id: Option<&str>) -> Result<Vec<crate::application::dtos::file_dto::FileDto>, crate::common::errors::DomainError> {

@@ -56,6 +56,12 @@ pub trait FileStoragePort: Send + Sync + 'static {
     
     /// Obtiene la ruta de almacenamiento de un archivo
     async fn get_file_path(&self, id: &str) -> Result<StoragePath, DomainError>;
+    
+    /// Obtiene el ID de la carpeta padre para una ruta dada (necesario para WebDAV)
+    async fn get_parent_folder_id(&self, path: &str) -> Result<String, DomainError>;
+    
+    /// Actualiza el contenido de un archivo existente
+    async fn update_file_content(&self, file_id: &str, content: Vec<u8>) -> Result<(), DomainError>;
 }
 
 /// Puerto secundario para persistencia de carpetas

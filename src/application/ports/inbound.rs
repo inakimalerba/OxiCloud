@@ -23,6 +23,15 @@ pub trait FileUseCase: Send + Sync + 'static {
     /// Obtiene un archivo por su ID
     async fn get_file(&self, id: &str) -> Result<FileDto, DomainError>;
     
+    /// Obtiene un archivo por su ruta (para WebDAV)
+    async fn get_file_by_path(&self, path: &str) -> Result<FileDto, DomainError>;
+    
+    /// Crea un nuevo archivo en la ruta especificada (para WebDAV)
+    async fn create_file(&self, parent_path: &str, filename: &str, content: &[u8], content_type: &str) -> Result<FileDto, DomainError>;
+    
+    /// Actualiza el contenido de un archivo existente (para WebDAV)
+    async fn update_file(&self, path: &str, content: &[u8]) -> Result<(), DomainError>;
+    
     /// Lista archivos en una carpeta
     async fn list_files(&self, folder_id: Option<&str>) -> Result<Vec<FileDto>, DomainError>;
     

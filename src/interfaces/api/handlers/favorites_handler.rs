@@ -5,13 +5,9 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use serde::{Deserialize, Serialize};
 use tracing::{error, info};
-use uuid::Uuid;
 
 use crate::application::ports::favorites_ports::FavoritesUseCase;
-use crate::application::dtos::favorites_dto::FavoriteItemDto;
-use crate::common::errors::{Result, DomainError, ErrorKind};
 
 /// Handler for favorite-related API endpoints
 pub async fn get_favorites(

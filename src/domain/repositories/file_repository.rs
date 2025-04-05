@@ -224,4 +224,16 @@ pub trait FileRepository: Send + Sync + 'static {
      * @return Success or error
      */
     async fn delete_file_permanently(&self, file_id: &str) -> FileRepositoryResult<()>;
+    
+    /**
+     * Updates the content of an existing file.
+     * 
+     * This method replaces the binary content of a file while preserving its
+     * metadata like ID, creation timestamp, and location.
+     * 
+     * @param file_id The unique identifier of the file to update
+     * @param content The new binary content for the file
+     * @return Success or error
+     */
+    async fn update_file_content(&self, file_id: &str, content: Vec<u8>) -> FileRepositoryResult<()>;
 }

@@ -1,246 +1,196 @@
-# Configuración de Clientes DAV para OxiCloud
+# WebDAV Client Setup Guide for OxiCloud
 
-Esta guía proporciona instrucciones para configurar varios clientes que soportan WebDAV, CalDAV y CardDAV para conectar con OxiCloud.
+This document provides detailed instructions for connecting desktop clients to OxiCloud using WebDAV, enabling seamless integration with your operating system's file browser.
 
-## Tabla de Contenidos
+## What is WebDAV?
 
-1. [URLs de Conexión](#urls-de-conexión)
-2. [Clientes WebDAV](#clientes-webdav)
-3. [Clientes CalDAV](#clientes-caldav)
-4. [Clientes CardDAV](#clientes-carddav)
-5. [Solución de Problemas](#solución-de-problemas)
+WebDAV (Web Distributed Authoring and Versioning) is an extension of the HTTP protocol that allows users to collaboratively edit and manage files on remote web servers. OxiCloud implements WebDAV to provide desktop access to your files and folders.
 
-## URLs de Conexión
+## Connection Information
 
-Usa las siguientes URLs para conectar tus clientes con OxiCloud:
+Use the following details to connect to OxiCloud via WebDAV:
 
-- **WebDAV**: `https://tu-servidor.com/webdav/`
-- **CalDAV**:
-  - Principal: `https://tu-servidor.com/caldav/`
-  - Calendario específico: `https://tu-servidor.com/caldav/{nombre-calendario}/`
-- **CardDAV**:
-  - Principal: `https://tu-servidor.com/carddav/addressbooks/`
-  - Libreta específica: `https://tu-servidor.com/carddav/addressbooks/{nombre-libreta}/`
+- **Server URL**: `https://[your-oxicloud-server]/webdav/`
+- **Username**: Your OxiCloud username
+- **Password**: Your OxiCloud password
 
-## Clientes WebDAV
+## Client Setup Instructions
 
 ### Windows
 
-#### Windows Explorer
+#### Windows 10/11 (File Explorer)
 
-1. Abre el Explorador de Windows
-2. Haz clic derecho en "Este equipo" y selecciona "Agregar una ubicación de red"
-3. Haz clic en "Siguiente"
-4. Selecciona "Elegir una ubicación de red personalizada" y haz clic en "Siguiente"
-5. En el campo de dirección, introduce: `https://tu-servidor.com/webdav/`
-6. Haz clic en "Siguiente"
-7. Introduce un nombre para la conexión (ej. "OxiCloud")
-8. Haz clic en "Siguiente" y luego en "Finalizar"
-9. Introduce tus credenciales cuando se te soliciten
+1. Open File Explorer
+2. Right-click on "This PC" and select "Add a network location"
+3. Click "Next"
+4. Select "Choose a custom network location" and click "Next"
+5. Enter the WebDAV URL: `https://[your-oxicloud-server]/webdav/`
+6. When prompted, enter your OxiCloud username and password
+7. Give the connection a name (e.g., "OxiCloud") and click "Next"
+8. Click "Finish"
 
-#### Problemas Comunes en Windows
+Your OxiCloud files will now appear as a network drive in File Explorer.
 
-- **Error de SSL**: Asegúrate de que tu certificado SSL sea válido y confiable para Windows
-- **Bloqueo por WebClient**: Asegúrate de que el servicio "WebClient" de Windows esté activado
-- **Límite de tamaño**: Windows limita por defecto las cargas a 50MB, modifica el registro para aumentarlo:
+#### Alternative Method: Map Network Drive
 
-```
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebClient\Parameters]
-"FileSizeLimitInBytes"=dword:00FFFFFF
-```
+1. Open File Explorer
+2. Right-click on "This PC" and select "Map network drive"
+3. Choose a drive letter
+4. Enter the WebDAV URL: `https://[your-oxicloud-server]/webdav/`
+5. Check "Connect using different credentials"
+6. Click "Finish"
+7. Enter your OxiCloud username and password
+
+**Troubleshooting Windows Connections:**
+
+If you experience issues connecting on Windows:
+
+1. Open Registry Editor (regedit.exe)
+2. Navigate to `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebClient\Parameters`
+3. Modify `BasicAuthLevel` to value `2`
+4. Restart the WebClient service or restart your computer
+
+You may also need to increase the file size limit:
+1. In the same registry location, modify `FileSizeLimitInBytes` to a higher value (e.g., `4294967295` for 4GB)
+2. Restart the WebClient service
 
 ### macOS
 
 #### Finder
 
-1. En Finder, haz clic en "Ir" en la barra de menú
-2. Selecciona "Conectar al servidor..." o presiona ⌘+K
-3. Introduce `https://tu-servidor.com/webdav/` como dirección del servidor
-4. Haz clic en "Conectar"
-5. Introduce tus credenciales cuando se te soliciten
-6. Selecciona si deseas guardar la contraseña en el llavero
+1. Open Finder
+2. From the menu bar, click "Go" > "Connect to Server" (or press ⌘K)
+3. Enter the WebDAV URL: `https://[your-oxicloud-server]/webdav/`
+4. Click "Connect"
+5. Enter your OxiCloud username and password
+6. Click "Connect"
+
+Your OxiCloud files will now appear as a mounted drive in Finder.
 
 ### Linux
 
-#### GNOME Files (Nautilus)
+#### GNOME (Nautilus File Manager)
 
-1. Abre Nautilus (Archivos)
-2. Haz clic en "Otras ubicaciones" en el panel lateral
-3. En la parte inferior, introduce `davs://tu-servidor.com/webdav/` en "Conectar al servidor"
-4. Haz clic en "Conectar"
-5. Introduce tus credenciales cuando se te soliciten
+1. Open Files (Nautilus)
+2. Click the "+" button in the sidebar or press Ctrl+L
+3. Enter the WebDAV URL: `davs://[your-oxicloud-server]/webdav/`
+4. Enter your credentials when prompted
+5. Click "Connect"
 
-#### Dolphin (KDE)
+#### KDE (Dolphin File Manager)
 
-1. Abre Dolphin
-2. En la barra de dirección, escribe `webdavs://tu-servidor.com/webdav/`
-3. Introduce tus credenciales cuando se te soliciten
+1. Open Dolphin
+2. In the address bar, enter: `webdavs://[your-oxicloud-server]/webdav/`
+3. Enter your credentials when prompted
+4. Click "Connect"
 
-### Clientes Multiplataforma
+#### Command Line (davfs2)
 
-#### Cyberduck
+1. Install davfs2: `sudo apt-get install davfs2` (Debian/Ubuntu) or equivalent for your distribution
+2. Create a mount point: `sudo mkdir /mnt/oxicloud`
+3. Edit `/etc/davfs2/secrets` and add: `/mnt/oxicloud [username] [password]`
+4. Mount the WebDAV share: `sudo mount -t davfs https://[your-oxicloud-server]/webdav/ /mnt/oxicloud`
 
-1. Descarga e instala [Cyberduck](https://cyberduck.io/)
-2. Haz clic en "Nueva conexión"
-3. Selecciona "WebDAV (HTTP/SSL)" como tipo de conexión
-4. Introduce los siguientes datos:
-   - Servidor: `tu-servidor.com`
-   - Puerto: `443`
-   - Ruta: `/webdav/`
-   - Nombre de usuario: tu nombre de usuario
-   - Contraseña: tu contraseña
-5. Haz clic en "Conectar"
+To automatically mount at boot, add to `/etc/fstab`:
+```
+https://[your-oxicloud-server]/webdav/ /mnt/oxicloud davfs user,rw,auto 0 0
+```
 
-## Clientes CalDAV
+### Mobile Devices
 
-### Apple Calendar (macOS/iOS)
+#### Android
 
-#### macOS
+Several apps support WebDAV connections on Android:
 
-1. Abre la aplicación Calendario
-2. Haz clic en "Calendario" en la barra de menú
-3. Selecciona "Añadir cuenta..."
-4. Selecciona "Otra cuenta de CalDAV..."
-5. Completa la información:
-   - Correo electrónico: tu dirección de correo
-   - Contraseña: tu contraseña
-   - Dirección del servidor: `tu-servidor.com`
-   - Ruta: `/caldav/` (deja en blanco si no funciona)
-6. Haz clic en "Iniciar sesión"
+1. **X-plore File Manager**:
+   - Install from Google Play Store
+   - Tap the globe icon (Network)
+   - Select "New Connection" > "WebDAV"
+   - Enter server details and credentials
 
-#### iOS
-
-1. Ve a Ajustes > Calendario > Cuentas > Añadir cuenta
-2. Selecciona "Otra"
-3. Selecciona "Añadir cuenta CalDAV"
-4. Completa la información:
-   - Servidor: `https://tu-servidor.com/caldav/`
-   - Nombre de usuario: tu nombre de usuario
-   - Contraseña: tu contraseña
-   - Descripción: "OxiCloud Calendario"
-5. Toca "Siguiente" y luego "Guardar"
-
-### Mozilla Thunderbird con Lightning
-
-1. Instala Thunderbird y la extensión Lightning
-2. Haz clic en el botón de calendario en la barra lateral
-3. Haz clic derecho en el panel izquierdo y selecciona "Nuevo calendario"
-4. Selecciona "En la red" y haz clic en "Siguiente"
-5. Selecciona "CalDAV" como formato
-6. Introduce `https://tu-servidor.com/caldav/nombre-calendario/` como ubicación
-7. Haz clic en "Siguiente", introduce un nombre para el calendario
-8. Completa la configuración y haz clic en "Finalizar"
-9. Introduce tus credenciales cuando se te soliciten
-
-### Nextcloud Desktop Sync
-
-1. Descarga e instala el cliente de sincronización de Nextcloud
-2. Durante la configuración, selecciona "Solo sincronización de calendario y contactos"
-3. Introduce `https://tu-servidor.com` como dirección del servidor
-4. Introduce tus credenciales
-5. En las opciones de sincronización, selecciona los calendarios que deseas sincronizar
-
-## Clientes CardDAV
-
-### Apple Contacts (macOS/iOS)
-
-#### macOS
-
-1. Abre la aplicación Contactos
-2. Haz clic en "Contactos" en la barra de menú
-3. Selecciona "Añadir cuenta..."
-4. Selecciona "Otra cuenta de CardDAV..."
-5. Completa la información:
-   - Correo electrónico: tu dirección de correo
-   - Contraseña: tu contraseña
-   - Dirección del servidor: `tu-servidor.com`
-   - Ruta: `/carddav/addressbooks/` (deja en blanco si no funciona)
-6. Haz clic en "Iniciar sesión"
+2. **Total Commander** with WebDAV plugin:
+   - Install both from Google Play Store
+   - Open the app and tap the folder icon
+   - Choose "LAN/Cloud" > "WebDAV"
+   - Enter your server details and credentials
 
 #### iOS
 
-1. Ve a Ajustes > Contactos > Cuentas > Añadir cuenta
-2. Selecciona "Otra"
-3. Selecciona "Añadir cuenta CardDAV"
-4. Completa la información:
-   - Servidor: `https://tu-servidor.com/carddav/addressbooks/`
-   - Nombre de usuario: tu nombre de usuario
-   - Contraseña: tu contraseña
-   - Descripción: "OxiCloud Contactos"
-5. Toca "Siguiente" y luego "Guardar"
+1. **Documents by Readdle**:
+   - Install from App Store
+   - Tap the "+" button
+   - Select "Add Connection" > "WebDAV Server"
+   - Enter server URL and credentials
 
-### Mozilla Thunderbird
+2. **FileBrowser**:
+   - Install from App Store
+   - Tap "+" to add a new connection
+   - Select "WebDAV"
+   - Enter server details and credentials
 
-1. Instala Thunderbird y la extensión CardBook
-2. Abre CardBook desde el menú de Thunderbird
-3. Haz clic en "Libreta de direcciones" > "Nuevo" > "Libreta de direcciones remota"
-4. Selecciona "CardDAV" como tipo
-5. Introduce `https://tu-servidor.com/carddav/addressbooks/nombre-libreta/` como URL
-6. Introduce un nombre para la libreta de direcciones
-7. Introduce tus credenciales
-8. Haz clic en "Validar" y luego en "Aceptar"
+## Third-Party Applications
 
-### Cliente Evolution (Linux)
+### Microsoft Office
 
-1. Abre Evolution
-2. Ve a Archivo > Nuevo > Libreta de direcciones
-3. Selecciona "CardDAV" como tipo
-4. Introduce `https://tu-servidor.com/carddav/addressbooks/nombre-libreta/` como URL
-5. Introduce un nombre para la libreta de direcciones
-6. Introduce tus credenciales
-7. Haz clic en "Aplicar"
+1. Open any Office application
+2. Go to File > Open
+3. Click "Add a Place" and select "Office.com" or "SharePoint"
+4. Enter the WebDAV URL: `https://[your-oxicloud-server]/webdav/`
+5. Enter your credentials when prompted
 
-## Solución de Problemas
+### LibreOffice
 
-### Problemas Comunes
+1. Go to File > Open
+2. In the file dialog, enter the WebDAV URL in the location bar
+3. Enter credentials when prompted
 
-1. **Error de autenticación**
-   - Verifica que estés usando las credenciales correctas
-   - Asegúrate de que tu cuenta tenga acceso a los recursos DAV
-   - Si usas autenticación de dos factores, es posible que necesites crear una contraseña de aplicación específica
+### Desktop WebDAV Clients
 
-2. **No se pueden encontrar calendarios/libretas**
-   - Verifica que hayas creado calendarios o libretas de direcciones en OxiCloud
-   - Asegúrate de estar usando la URL correcta, incluyendo la terminación con `/`
-   - Verifica los permisos de los recursos
+- **Cyberduck** (Windows, macOS): Free, open-source WebDAV client
+- **WinSCP** (Windows): Primarily an FTP client, but supports WebDAV
+- **FileZilla Pro** (Windows, macOS, Linux): Supports WebDAV in the Pro version
 
-3. **Error SSL/TLS**
-   - Asegúrate de que tu certificado SSL sea válido y confiable
-   - Verifica que la fecha y hora de tu dispositivo sean correctas
-   - En algunos clientes, puede ser necesario confiar manualmente en el certificado
+## Performance Considerations
 
-4. **Sincronización lenta**
-   - Limita el número de elementos en tus calendarios y libretas de direcciones
-   - Verifica la calidad de tu conexión a Internet
-   - Algunas operaciones masivas (como importar muchos contactos) pueden tardar tiempo
+For optimal performance when using WebDAV:
 
-### Herramientas de Diagnóstico
+1. **Large Files**: When working with files larger than 100MB, consider downloading them locally before editing
+2. **Slow Connections**: Enable offline caching in your client when available
+3. **File Locking**: Some clients support WebDAV locking to prevent conflicts
 
-1. **Verificación de conectividad**: Prueba la conexión básica con:
-   ```
-   curl -v https://tu-servidor.com/webdav/
-   ```
+## Limitations and Known Issues
 
-2. **Prueba de autenticación**:
-   ```
-   curl -v -u usuario:contraseña https://tu-servidor.com/webdav/
-   ```
+- **File Locking**: The current implementation does not support WebDAV locking operations (LOCK and UNLOCK)
+- **Performance**: WebDAV may be slower than native sync clients for large file transfers
+- **File Size**: Some WebDAV clients may have limitations on file sizes
 
-3. **Prueba de funcionalidad WebDAV**:
-   ```
-   curl -X PROPFIND -H "Depth: 1" -u usuario:contraseña https://tu-servidor.com/webdav/
-   ```
+## Security Considerations
 
-4. **Prueba de funcionalidad CalDAV**:
-   ```
-   curl -X PROPFIND -H "Depth: 1" -u usuario:contraseña https://tu-servidor.com/caldav/
-   ```
+WebDAV connections to OxiCloud use the same authentication mechanisms as the web interface. For enhanced security:
 
-5. **Logs del servidor**: Si tienes acceso, revisa los logs del servidor para identificar problemas específicos.
+1. Always use HTTPS connections
+2. Consider setting up two-factor authentication if supported
+3. Don't save credentials on shared or public computers
 
-### Contacto para Soporte
+## Troubleshooting
 
-Si continúas experimentando problemas, contacta con soporte en:
-- Email: soporte@ejemplo.com
-- Foro: https://ejemplo.com/foro
-- Sistema de tickets: https://soporte.ejemplo.com
+### Connection Issues
+
+- Verify the server URL is correct and includes the `/webdav/` path
+- Ensure your username and password are entered correctly
+- Check if your network blocks WebDAV connections (ports 80/443)
+- Verify that your OxiCloud server has WebDAV enabled
+
+### File Operation Issues
+
+- If you cannot upload files, check if you have write permissions
+- If files appear to be corrupted, try using a different WebDAV client
+- For timeout errors, increase the client timeout settings if possible
+
+### Client-Specific Issues
+
+For client-specific issues, consult the documentation for your WebDAV client or operating system.
+
+## Getting Help
+
+If you encounter issues not covered in this document, please contact your OxiCloud administrator or refer to the main OxiCloud documentation.
