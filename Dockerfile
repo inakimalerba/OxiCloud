@@ -1,8 +1,7 @@
 # Stage 1: Cache dependencies
 FROM rust:1.85-alpine AS cacher
 WORKDIR /app
-RUN apk --no-cache update && \
-    apk --no-cache upgrade && \
+RUN apk --no-cache upgrade && \
     apk add --no-cache musl-dev openssl-dev pkgconfig postgresql-dev
 COPY Cargo.toml Cargo.lock ./
 # Create a minimal project to download and cache dependencies
@@ -14,8 +13,7 @@ RUN mkdir -p src && \
 # Stage 2: Build the application
 FROM rust:1.85-alpine AS builder
 WORKDIR /app
-RUN apk --no-cache update && \
-    apk --no-cache upgrade && \
+RUN apk --no-cache upgrade && \
     apk add --no-cache musl-dev openssl-dev pkgconfig postgresql-dev
 # Copy cached dependencies
 COPY --from=cacher /app/target target
@@ -31,8 +29,7 @@ RUN cargo build --release
 # Stage 3: Create minimal final image
 FROM alpine:3.21.3
 # Install only necessary runtime dependencies and update packages
-RUN apk --no-cache update && \
-    apk --no-cache upgrade && \
+RUN apk --no-cache upgrade && \
     apk add --no-cache libgcc openssl ca-certificates libpq tzdata
 
 # Copy only the compiled binary
