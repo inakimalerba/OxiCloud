@@ -12,6 +12,8 @@ use bytes::Bytes;
 use uuid::Uuid;
 use tokio::task;
 
+use crate::infrastructure::services::file_system_utils::FileSystemUtils;
+
 use crate::domain::entities::file::File;
 use crate::domain::repositories::file_repository::{
     FileRepository, FileRepositoryError, FileRepositoryResult
@@ -312,12 +314,12 @@ impl FileFsRepository {
         Ok((size, created_at, modified_at))
     }
     
-    /// Creates parent directories if needed with timeout
+    /// Creates parent directories if needed with timeout and fsync
     async fn ensure_parent_directory(&self, abs_path: &PathBuf) -> FileRepositoryResult<()> {
         if let Some(parent) = abs_path.parent() {
             time::timeout(
                 self.config.timeouts.dir_timeout(),
-                fs::create_dir_all(parent)
+                FileSystemUtils::create_dir_with_sync(parent)
             ).await
             .map_err(|_| FileRepositoryError::Timeout(
                 format!("Timeout creating parent directory: {}", parent.display())
@@ -508,8 +510,9 @@ impl FileStoragePort for FileFsRepository {
         // Resolve to actual filesystem path
         let physical_path = self.storage_mediator.resolve_storage_path(&file_path);
         
-        // Write the content to the file
-        std::fs::write(&physical_path, content)
+        // Write the content to the file with fsync
+        FileSystemUtils::atomic_write(&physical_path, &content)
+            .await
             .map_err(|e| DomainError::internal_error("FileStorage", 
                 format!("Failed to write updated content to file: {}: {}", file_id, e)))?;
                 
@@ -518,7 +521,7 @@ impl FileStoragePort for FileFsRepository {
             // Create a FileMetadata instance and update the cache
             use crate::infrastructure::services::file_metadata_cache::FileMetadata;
             use crate::infrastructure::services::file_metadata_cache::CacheEntryType;
-            use std::time::{SystemTime, UNIX_EPOCH};
+            use std::time::UNIX_EPOCH;
             use std::time::Duration;
             
             // Get modified and created times
@@ -614,8 +617,9 @@ impl FileRepository for FileFsRepository {
         let storage_path = FileRepository::get_file_path(self, file_id).await?;
         let physical_path = self.path_service.resolve_path(&storage_path);
         
-        // Write the content to the file
-        std::fs::write(&physical_path, &content)
+        // Write the content to the file with fsync
+        FileSystemUtils::atomic_write(&physical_path, &content)
+            .await
             .map_err(|e| FileRepositoryError::IoError(e))?;
             
         // Get the metadata and add it to cache if available
@@ -623,7 +627,7 @@ impl FileRepository for FileFsRepository {
             // Create a FileMetadata instance and update the cache
             use crate::infrastructure::services::file_metadata_cache::FileMetadata;
             use crate::infrastructure::services::file_metadata_cache::CacheEntryType;
-            use std::time::{SystemTime, UNIX_EPOCH};
+            use std::time::UNIX_EPOCH;
             use std::time::Duration;
             
             // Get modified and created times
@@ -1501,10 +1505,10 @@ impl FileRepository for FileFsRepository {
         // Ensure the target directory exists
         self.ensure_parent_directory(&new_abs_path).await?;
         
-        // Move the file physically (efficient rename operation) with timeout
+        // Move the file physically with fsync (efficient rename operation) with timeout
         time::timeout(
             self.config.timeouts.file_timeout(),
-            fs::rename(&old_abs_path, &new_abs_path)
+            FileSystemUtils::rename_with_sync(&old_abs_path, &new_abs_path)
         ).await
         .map_err(|_| FileRepositoryError::Timeout(format!("Timeout moving file from {} to {}", 
                                                         old_abs_path.display(), new_abs_path.display())))?

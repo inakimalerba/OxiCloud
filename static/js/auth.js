@@ -275,7 +275,9 @@ if (isLoginPage && loginForm) {
             username: username, 
             email: username + '@example.com', 
             role: 'user',
-            active: true 
+            active: true,
+            storage_quota_bytes: 10737418240, // 10GB default
+            storage_used_bytes: 0
         };
         
         console.log("Storing user data:", userData);

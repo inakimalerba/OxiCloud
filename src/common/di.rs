@@ -311,6 +311,7 @@ pub struct AppState {
     pub share_service: Option<Arc<dyn crate::application::ports::share_ports::ShareUseCase>>,
     pub favorites_service: Option<Arc<dyn FavoritesUseCase>>,
     pub recent_service: Option<Arc<dyn RecentItemsUseCase>>,
+    pub storage_usage_service: Option<Arc<dyn crate::application::ports::storage_ports::StorageUsagePort>>,
 }
 
 impl Default for AppState {
@@ -438,6 +439,14 @@ impl Default for AppState {
             
             async fn delete_file(&self, _id: &str) -> Result<(), crate::common::errors::DomainError> {
                 Ok(())
+            }
+            
+            async fn get_folder_details(&self, _folder_id: &str) -> Result<crate::domain::entities::file::File, crate::common::errors::DomainError> {
+                Ok(crate::domain::entities::file::File::default())
+            }
+            
+            async fn get_folder_path_str(&self, _folder_id: &str) -> Result<String, crate::common::errors::DomainError> {
+                Ok("/Mi Carpeta - dummy".to_string())
             }
         }
         
@@ -815,6 +824,7 @@ impl Default for AppState {
             share_service: None,
             favorites_service: None,
             recent_service: None,
+            storage_usage_service: None,
         }
     }
 }
@@ -835,6 +845,7 @@ impl AppState {
             share_service: None,
             favorites_service: None,
             recent_service: None,
+            storage_usage_service: None,
         }
     }
     
@@ -865,6 +876,11 @@ impl AppState {
     
     pub fn with_recent_service(mut self, recent_service: Arc<dyn RecentItemsUseCase>) -> Self {
         self.recent_service = Some(recent_service);
+        self
+    }
+    
+    pub fn with_storage_usage_service(mut self, storage_usage_service: Arc<dyn crate::application::ports::storage_ports::StorageUsagePort>) -> Self {
+        self.storage_usage_service = Some(storage_usage_service);
         self
     }
 }

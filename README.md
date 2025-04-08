@@ -51,7 +51,7 @@ echo "DATABASE_URL=postgres://username:password@localhost/oxicloud" > .env
 cargo build --release
 
 # Run database migrations
-cargo run --bin migrate
+cargo run --bin migrate --features migrations
 
 # Run the server
 cargo run --release

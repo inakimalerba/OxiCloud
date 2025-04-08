@@ -1137,7 +1137,9 @@ function checkAuthentication() {
             const defaultUserData = {
                 id: 'default-user-id',
                 username: 'usuario',
-                email: 'usuario@example.com'
+                email: 'usuario@example.com',
+                storage_quota_bytes: 10737418240, // 10GB default
+                storage_used_bytes: 0
             };
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(defaultUserData));
             
@@ -1146,6 +1148,9 @@ function checkAuthentication() {
             if (userAvatar) {
                 userAvatar.textContent = 'US';
             }
+            
+            // Update storage display with default values
+            updateStorageUsageDisplay(defaultUserData);
         } else {
             // Update avatar with user initials
             const userInitials = userData.username.substring(0, 2).toUpperCase();
@@ -1199,6 +1204,9 @@ function checkAuthentication() {
                 userAvatar.textContent = userInitials;
             }
             
+            // Update storage usage information
+            updateStorageUsageDisplay(userData);
+            
             // Find and load the user's home folder
             findUserHomeFolder(userData.username);
         } else {
@@ -1207,7 +1215,9 @@ function checkAuthentication() {
             const defaultUserData = {
                 id: 'default-user-id',
                 username: 'usuario',
-                email: 'usuario@example.com'
+                email: 'usuario@example.com',
+                storage_quota_bytes: 10737418240, // 10GB default
+                storage_used_bytes: 0
             };
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(defaultUserData));
             
@@ -1216,6 +1226,9 @@ function checkAuthentication() {
             if (userAvatar) {
                 userAvatar.textContent = 'US';
             }
+            
+            // Update storage display with default values
+            updateStorageUsageDisplay(defaultUserData);
             
             // Find and load default folder
             app.currentPath = '';
@@ -1234,7 +1247,9 @@ function checkAuthentication() {
         const defaultUserData = {
             id: 'emergency-user-id',
             username: 'usuario',
-            email: 'usuario@example.com'
+            email: 'usuario@example.com',
+            storage_quota_bytes: 10737418240, // 10GB default
+            storage_used_bytes: 0
         };
         localStorage.setItem('oxicloud_user', JSON.stringify(defaultUserData));
         
@@ -1243,6 +1258,9 @@ function checkAuthentication() {
         if (userAvatar) {
             userAvatar.textContent = 'US';
         }
+        
+        // Update storage display with default values
+        updateStorageUsageDisplay(defaultUserData);
         
         // Load root files
         app.currentPath = '';
@@ -1418,6 +1436,46 @@ function logout() {
     
     // Redirect to login page with correct path
     window.location.href = '/login.html';
+}
+
+/**
+ * Update the storage usage display with the user's actual storage usage
+ * @param {Object} userData - The user data object
+ */
+function updateStorageUsageDisplay(userData) {
+    // Default values
+    let usedBytes = 0;
+    let quotaBytes = 10737418240; // Default 10GB
+    let usagePercentage = 0;
+
+    // Get values from user data if available
+    if (userData) {
+        usedBytes = userData.storage_used_bytes || 0;
+        quotaBytes = userData.storage_quota_bytes || 10737418240;
+        
+        // Calculate percentage (avoid division by zero)
+        if (quotaBytes > 0) {
+            usagePercentage = Math.min(Math.round((usedBytes / quotaBytes) * 100), 100);
+        }
+    }
+
+    // Format the numbers for display
+    const usedFormatted = formatFileSize(usedBytes);
+    const quotaFormatted = formatFileSize(quotaBytes);
+
+    // Update the storage display elements
+    const storageFill = document.querySelector('.storage-fill');
+    const storageInfo = document.querySelector('.storage-info');
+    
+    if (storageFill) {
+        storageFill.style.width = `${usagePercentage}%`;
+    }
+    
+    if (storageInfo) {
+        storageInfo.textContent = `${usagePercentage}% usado (${usedFormatted} / ${quotaFormatted})`;
+    }
+    
+    console.log(`Updated storage display: ${usagePercentage}% (${usedFormatted} / ${quotaFormatted})`);
 }
 
 // Initialize app when DOM is ready

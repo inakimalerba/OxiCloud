@@ -46,6 +46,12 @@ http-body-util = "0.1.3"
 [features]
 default = []
 test_utils = ["mockall"]
+migrations = ["sqlx/migrate"]
+
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"
+required-features = ["migrations"]
 
 [profile.release]
 lto = "fat"

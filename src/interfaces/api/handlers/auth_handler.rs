@@ -212,6 +212,28 @@ async fn get_current_user(
     let auth_service = state.auth_service.as_ref()
         .ok_or_else(|| AppError::internal_error("Servicio de autenticación no configurado"))?;
     
+    // Primero, intentamos actualizar las estadísticas de uso de almacenamiento
+    // Si existe el servicio de uso de almacenamiento
+    if let Some(storage_usage_service) = state.storage_usage_service.as_ref() {
+        // Actualizamos el uso de almacenamiento en segundo plano
+        // No bloqueamos la respuesta con esta actualización
+        let user_id = current_user.id.clone();
+        let storage_service = storage_usage_service.clone();
+        
+        // Ejecutar asincronamente para no retrasar la respuesta
+        tokio::spawn(async move {
+            match storage_service.update_user_storage_usage(&user_id).await {
+                Ok(usage) => {
+                    tracing::info!("Updated storage usage for user {}: {} bytes", user_id, usage);
+                },
+                Err(e) => {
+                    tracing::warn!("Failed to update storage usage for user {}: {}", user_id, e);
+                }
+            }
+        });
+    }
+    
+    // Obtener los datos del usuario (que puede tener valores de almacenamiento desactualizados)
     let user = auth_service.auth_application_service.get_user_by_id(&current_user.id).await?;
     
     Ok((StatusCode::OK, Json(user)))

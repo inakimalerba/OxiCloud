@@ -111,7 +111,7 @@ body {
 .storage-fill {
     height: 100%;
     background-color: #ff5e3a;
-    width: 56%;
+    width: 0%; /* Will be set dynamically via JavaScript */
 }
 
 .storage-info {

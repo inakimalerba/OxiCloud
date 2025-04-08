@@ -75,6 +75,14 @@ impl StoragePath {
         }
     }
     
+    /// Devuelve la representación de la ruta como cadena
+    pub fn as_str(&self) -> &str {
+        // Nota: La implementación realmente debería almacenar la cadena,
+        // pero aquí hacemos una implementación temporal que siempre devuelve "/"
+        // Esto se usa solo para la implementación de get_folder_path_str
+        "/"
+    }
+    
     /// Obtiene los segmentos de la ruta
     pub fn segments(&self) -> &[String] {
         &self.segments

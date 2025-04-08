@@ -1,11 +1,20 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row};
+use sqlx::{PgPool, Row, Executor};
 use std::sync::Arc;
+use futures::future::BoxFuture;
 
 use crate::domain::entities::user::{User, UserRole};
 use crate::domain::repositories::user_repository::{UserRepository, UserRepositoryError, UserRepositoryResult};
 use crate::application::ports::auth_ports::UserStoragePort;
 use crate::common::errors::DomainError;
+use crate::infrastructure::repositories::pg::transaction_utils::with_transaction;
+
+// Implementar From<sqlx::Error> para UserRepositoryError para permitir conversiones automáticas
+impl From<sqlx::Error> for UserRepositoryError {
+    fn from(err: sqlx::Error) -> Self {
+        UserPgRepository::map_sqlx_error(err)
+    }
+}
 
 pub struct UserPgRepository {
     pool: Arc<PgPool>,
@@ -17,7 +26,7 @@ impl UserPgRepository {
     }
     
     // Método auxiliar para mapear errores SQL a errores de dominio
-    fn map_sqlx_error(err: sqlx::Error) -> UserRepositoryError {
+    pub fn map_sqlx_error(err: sqlx::Error) -> UserRepositoryError {
         match err {
             sqlx::Error::RowNotFound => {
                 UserRepositoryError::NotFound("Usuario no encontrado".to_string())
@@ -43,40 +52,58 @@ impl UserPgRepository {
 
 #[async_trait]
 impl UserRepository for UserPgRepository {
-    /// Crea un nuevo usuario
+    /// Crea un nuevo usuario utilizando una transacción
     async fn create_user(&self, user: User) -> UserRepositoryResult<User> {
-        // Usamos los getters para extraer los valores
-        // Convertimos user.role() a string para pasarlo como texto plano
-        let role_str = user.role().to_string();
+        // Creamos una copia del usuario para el closure
+        let user_clone = user.clone();
         
-        // Modificar el SQL para hacer un cast explícito al tipo auth.userrole
-        let _result = sqlx::query(
-            r#"
-            INSERT INTO auth.users (
-                id, username, email, password_hash, role, 
-                storage_quota_bytes, storage_used_bytes, 
-                created_at, updated_at, last_login_at, active
-            ) VALUES (
-                $1, $2, $3, $4, $5::auth.userrole, $6, $7, $8, $9, $10, $11
-            )
-            RETURNING *
-            "#
-        )
-        .bind(user.id())
-        .bind(user.username())
-        .bind(user.email())
-        .bind(user.password_hash())
-        .bind(&role_str) // Convertir a string pero con cast explícito en SQL
-        .bind(user.storage_quota_bytes())
-        .bind(user.storage_used_bytes())
-        .bind(user.created_at())
-        .bind(user.updated_at())
-        .bind(user.last_login_at())
-        .bind(user.is_active())
-        .fetch_one(&*self.pool)
-        .await
-        .map_err(Self::map_sqlx_error)?;
-
+        with_transaction(
+            &self.pool,
+            "create_user",
+            |tx| {
+                // Necesitamos mover el closure a un BoxFuture para devolver dentro
+                // de la llamada with_transaction
+                Box::pin(async move {
+                    // Usamos los getters para extraer los valores
+                    // Convertimos user.role() a string para pasarlo como texto plano
+                    let role_str = user_clone.role().to_string();
+                    
+                    // Modificar el SQL para hacer un cast explícito al tipo auth.userrole
+                    let _result = sqlx::query(
+                        r#"
+                        INSERT INTO auth.users (
+                            id, username, email, password_hash, role, 
+                            storage_quota_bytes, storage_used_bytes, 
+                            created_at, updated_at, last_login_at, active
+                        ) VALUES (
+                            $1, $2, $3, $4, $5::auth.userrole, $6, $7, $8, $9, $10, $11
+                        )
+                        RETURNING *
+                        "#
+                    )
+                    .bind(user_clone.id())
+                    .bind(user_clone.username())
+                    .bind(user_clone.email())
+                    .bind(user_clone.password_hash())
+                    .bind(&role_str) // Convertir a string pero con cast explícito en SQL
+                    .bind(user_clone.storage_quota_bytes())
+                    .bind(user_clone.storage_used_bytes())
+                    .bind(user_clone.created_at())
+                    .bind(user_clone.updated_at())
+                    .bind(user_clone.last_login_at())
+                    .bind(user_clone.is_active())
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(Self::map_sqlx_error)?;
+                    
+                    // Podríamos realizar operaciones adicionales aquí,
+                    // como configurar permisos, roles, etc.
+                    
+                    Ok(user_clone)
+                }) as BoxFuture<'_, UserRepositoryResult<User>>
+            }
+        ).await?;
+        
         Ok(user) // Devolvemos el usuario original por simplicidad
     }
     
@@ -197,38 +224,55 @@ impl UserRepository for UserPgRepository {
         ))
     }
     
-    /// Actualiza un usuario existente
+    /// Actualiza un usuario existente utilizando una transacción
     async fn update_user(&self, user: User) -> UserRepositoryResult<User> {
-        sqlx::query(
-            r#"
-            UPDATE auth.users
-            SET 
-                username = $2,
-                email = $3,
-                password_hash = $4,
-                role = $5::auth.userrole,
-                storage_quota_bytes = $6,
-                storage_used_bytes = $7,
-                updated_at = $8,
-                last_login_at = $9,
-                active = $10
-            WHERE id = $1
-            "#
-        )
-        .bind(user.id())
-        .bind(user.username())
-        .bind(user.email())
-        .bind(user.password_hash())
-        .bind(&user.role().to_string()) // Esto no usa el cast explícito porque el SQL ya lo tiene
-        .bind(user.storage_quota_bytes())
-        .bind(user.storage_used_bytes())
-        .bind(user.updated_at())
-        .bind(user.last_login_at())
-        .bind(user.is_active())
-        .execute(&*self.pool)
-        .await
-        .map_err(Self::map_sqlx_error)?;
-
+        // Creamos una copia del usuario para el closure
+        let user_clone = user.clone();
+        
+        with_transaction(
+            &self.pool,
+            "update_user",
+            |tx| {
+                Box::pin(async move {
+                    // Actualizar el usuario
+                    sqlx::query(
+                        r#"
+                        UPDATE auth.users
+                        SET 
+                            username = $2,
+                            email = $3,
+                            password_hash = $4,
+                            role = $5::auth.userrole,
+                            storage_quota_bytes = $6,
+                            storage_used_bytes = $7,
+                            updated_at = $8,
+                            last_login_at = $9,
+                            active = $10
+                        WHERE id = $1
+                        "#
+                    )
+                    .bind(user_clone.id())
+                    .bind(user_clone.username())
+                    .bind(user_clone.email())
+                    .bind(user_clone.password_hash())
+                    .bind(&user_clone.role().to_string())
+                    .bind(user_clone.storage_quota_bytes())
+                    .bind(user_clone.storage_used_bytes())
+                    .bind(user_clone.updated_at())
+                    .bind(user_clone.last_login_at())
+                    .bind(user_clone.is_active())
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(Self::map_sqlx_error)?;
+                    
+                    // Podríamos realizar operaciones adicionales aquí dentro
+                    // de la misma transacción, como actualizar permisos, etc.
+                    
+                    Ok(user_clone)
+                }) as BoxFuture<'_, UserRepositoryResult<User>>
+            }
+        ).await?;
+        
         Ok(user)
     }
     

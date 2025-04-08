@@ -12,6 +12,7 @@ use crate::domain::services::path_service::StoragePath;
 use crate::infrastructure::repositories::parallel_file_processor::ParallelFileProcessor;
 use crate::common::config::AppConfig;
 use crate::application::services::storage_mediator::StorageMediator;
+use crate::infrastructure::services::file_system_utils::FileSystemUtils;
 
 /// Implementación de repositorio para operaciones de escritura de archivos
 pub struct FileFsWriteRepository {
@@ -55,12 +56,12 @@ impl FileFsWriteRepository {
         }
     }
     
-    /// Crea directorios padres si es necesario
+    /// Crea directorios padres si es necesario, con sincronización
     async fn ensure_parent_directory(&self, abs_path: &PathBuf) -> FileRepositoryResult<()> {
         if let Some(parent) = abs_path.parent() {
             tokio::time::timeout(
                 self.config.timeouts.dir_timeout(),
-                tokio::fs::create_dir_all(parent)
+                FileSystemUtils::create_dir_with_sync(parent)
             ).await
             .map_err(|_| crate::domain::repositories::file_repository::FileRepositoryError::Timeout(
                 format!("Timeout creating parent directory: {}", parent.display())
@@ -149,10 +150,10 @@ impl FileWritePort for FileFsWriteRepository {
         self.ensure_parent_directory(&abs_path).await
             .map_err(|e| DomainError::internal_error("File system", e.to_string()))?;
         
-        // Write the file to disk
+        // Write the file to disk using atomic write with fsync
         tokio::time::timeout(
             self.config.timeouts.file_write_timeout(),
-            tokio::fs::write(&abs_path, &content)
+            FileSystemUtils::atomic_write(&abs_path, &content)
         ).await
         .map_err(|_| DomainError::internal_error(
             "File write", 
@@ -201,5 +202,27 @@ impl FileWritePort for FileFsWriteRepository {
         // En una implementación real, buscaríamos el archivo por ID y lo eliminaríamos
         tracing::info!("File deletion simulated successfully");
         Ok(())
+    }
+    
+    async fn get_folder_details(&self, folder_id: &str) -> Result<File, DomainError> {
+        // Fetch the folder information from the metadata manager
+        match self.metadata_manager.get_folder_by_id(folder_id).await {
+            Ok(folder) => Ok(folder),
+            Err(err) => {
+                tracing::warn!("Error getting folder details for ID {}: {}", folder_id, err);
+                Err(DomainError::not_found("Folder", folder_id.to_string()))
+            }
+        }
+    }
+    
+    async fn get_folder_path_str(&self, folder_id: &str) -> Result<String, DomainError> {
+        // Fetch the folder information
+        let folder = self.get_folder_details(folder_id).await?;
+        
+        // Convert StoragePath to string
+        let path_str = folder.storage_path().to_string();
+        
+        tracing::debug!("Resolved folder path for ID {}: {}", folder_id, path_str);
+        Ok(path_str)
     }
 }

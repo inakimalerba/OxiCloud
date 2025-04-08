@@ -122,6 +122,36 @@ impl File {
         })
     }
     
+    /// Creates a folder entity
+    pub fn new_folder(
+        id: String,
+        name: String,
+        storage_path: StoragePath,
+        parent_id: Option<String>,
+        created_at: u64,
+        modified_at: u64,
+    ) -> FileResult<Self> {
+        // Validate folder name
+        if name.is_empty() || name.contains('/') || name.contains('\\') {
+            return Err(FileError::InvalidFileName(name));
+        }
+        
+        // Store the path string for serialization compatibility
+        let path_string = storage_path.to_string();
+            
+        Ok(Self {
+            id,
+            name,
+            storage_path,
+            path_string,
+            size: 0, // Folders have zero size
+            mime_type: "directory".to_string(), // Standard MIME type for directories
+            folder_id: parent_id,
+            created_at,
+            modified_at,
+        })
+    }
+    
     /// Creates a file with specific timestamps (for reconstruction)
     pub fn with_timestamps(
         id: String,

@@ -15,6 +15,7 @@ pub mod search_service;
 pub mod share_service;
 pub mod favorites_service;
 pub mod recent_service;
+pub mod storage_usage_service;
 
 #[cfg(test)]
 mod trash_service_test;
