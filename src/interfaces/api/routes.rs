@@ -97,6 +97,7 @@ pub fn create_api_routes(
             path_resolver: path_resolver.clone(),
             trash_repository: None, // This is OK to be None since we use the trash_service directly
         },
+        storage_usage_service: None,
         applications: crate::common::di::ApplicationServices {
             folder_service: folder_service.clone(),
             file_service: file_service.clone(),

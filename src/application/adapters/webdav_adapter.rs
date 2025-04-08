@@ -5,10 +5,9 @@
  * It handles parsing WebDAV request XML and generating WebDAV response XML according to RFC 4918.
  */
 
-use std::io::{Read, Write, BufRead, BufReader};
+use std::io::{Read, Write, BufReader};
 use quick_xml::{Reader, Writer, events::{Event, BytesStart, BytesEnd, BytesText}};
-use std::collections::HashMap;
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::Utc;
 use crate::application::dtos::file_dto::FileDto;
 use crate::application::dtos::folder_dto::FolderDto;
 

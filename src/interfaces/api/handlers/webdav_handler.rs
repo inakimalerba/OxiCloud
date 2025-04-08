@@ -8,26 +8,20 @@
  */
 
 use axum::{
-    Router, 
-    extract::{self},
+    Router,
     response::Response,
-    http::{StatusCode, header, HeaderName, Request, Method},
+    http::{StatusCode, header, HeaderName, Request},
     body::{Body, self},
-    routing::MethodRouter,
 };
-use std::collections::HashMap;
 use std::sync::Arc;
-use std::io::{Cursor, Read};
 use uuid::Uuid;
 use http_body_util::BodyExt;
 use chrono::Utc;
 use bytes::Buf;
-use tower::service_fn;
 
 use crate::common::di::AppState;
-use crate::application::adapters::webdav_adapter::{WebDavAdapter, PropFindRequest, LockInfo, LockScope, LockType, WebDavError};
+use crate::application::adapters::webdav_adapter::{WebDavAdapter, PropFindRequest, LockInfo, LockScope, LockType};
 use crate::interfaces::middleware::auth::CurrentUser;
-use crate::application::dtos::file_dto::FileDto;
 use crate::application::dtos::folder_dto::FolderDto;
 use crate::common::errors::AppError;
 
