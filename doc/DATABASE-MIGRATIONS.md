@@ -136,6 +136,45 @@ match migration_check {
 
 3. **Permisos insuficientes**: Asegúrate de que el usuario de la base de datos tenga permisos suficientes para crear esquemas, tablas e índices.
 
+4. **Error "Admin already exists"**: Si al intentar registrar un usuario admin recibes el error "El usuario 'admin' ya existe", sigue estos pasos:
+
+   a. Conéctate al contenedor de PostgreSQL:
+   ```bash
+   # Encuentra el contenedor
+   docker ps
+   # Ejemplo: oxicloud-postgres-1
+   docker exec -it oxicloud-postgres-1 bash
+   ```
+
+   b. Conéctate a la base de datos:
+   ```bash
+   psql -U postgres -d oxicloud
+   ```
+
+   c. Establece el esquema y borra el usuario admin existente:
+   ```sql
+   SET search_path TO auth;
+   DELETE FROM auth.users WHERE username = 'admin';
+   ```
+
+   d. Verifica la eliminación:
+   ```sql
+   SELECT username, email, role FROM auth.users;
+   ```
+
+   e. Sal de PostgreSQL:
+   ```sql
+   \q
+   exit
+   ```
+
+   f. Ahora puedes registrar un nuevo usuario admin a través de la interfaz de OxiCloud.
+
+   Alternativamente, utiliza el script proporcionado:
+   ```bash
+   cat scripts/reset_admin.sql | docker exec -i oxicloud-postgres-1 psql -U postgres -d oxicloud
+   ```
+
 ## Beneficios del Enfoque Basado en Migraciones
 
 - **Separación de Responsabilidades**: Las migraciones están separadas del código de la aplicación.

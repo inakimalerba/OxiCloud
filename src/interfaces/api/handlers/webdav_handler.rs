@@ -15,7 +15,6 @@ use axum::{
 };
 use std::sync::Arc;
 use uuid::Uuid;
-use http_body_util::BodyExt;
 use chrono::Utc;
 use bytes::Buf;
 
@@ -28,7 +27,7 @@ use crate::common::errors::AppError;
 // Create a custom DAV header since it's not in the standard headers
 const HEADER_DAV: HeaderName = HeaderName::from_static("dav");
 const HEADER_LOCK_TOKEN: HeaderName = HeaderName::from_static("lock-token");
-const HEADER_IF: HeaderName = HeaderName::from_static("if");
+// const HEADER_IF: HeaderName = HeaderName::from_static("if");
 
 /**
  * Creates and returns the WebDAV router with all required endpoints.
@@ -81,7 +80,7 @@ async fn handle_options(
 ) -> Result<Response<Body>, AppError> {
     // Extract State and Path from request
     let parts = req.uri().path().split('/').collect::<Vec<&str>>();
-    let path = if parts.len() > 2 {
+    let _path = if parts.len() > 2 {
         parts[2..].join("/")
     } else {
         "".to_string()
@@ -313,10 +312,10 @@ async fn handle_proppatch(
         "".to_string()
     };
     
-    let state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
+    let _state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
         AppError::internal_error("Missing AppState extension")
     })?;
-    let user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
+    let _user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
         AppError::unauthorized("Authentication required")
     })?;
     
@@ -391,7 +390,7 @@ async fn handle_get(
     let state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
         AppError::internal_error("Missing AppState extension")
     })?;
-    let user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
+    let _user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
         AppError::unauthorized("Authentication required")
     })?;
     
@@ -405,7 +404,7 @@ async fn handle_get(
     }
     
     // Get file metadata
-    let file = file_service.get_file_by_path(&path).await.map_err(|e| {
+    let file = file_service.get_file_by_path(&path).await.map_err(|_e| {
         AppError::not_found(format!("File not found: {}", path))
     })?;
     
@@ -654,7 +653,7 @@ async fn handle_delete(
     let state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
         AppError::internal_error("Missing AppState extension")
     })?;
-    let user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
+    let _user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
         AppError::unauthorized("Authentication required")
     })?;
     
@@ -677,7 +676,7 @@ async fn handle_delete(
         })?;
     } else {
         // Try to delete file
-        let file = file_service.get_file_by_path(&path).await.map_err(|e| {
+        let file = file_service.get_file_by_path(&path).await.map_err(|_e| {
             AppError::not_found(format!("Resource not found: {}", path))
         })?;
         
@@ -718,7 +717,7 @@ async fn handle_move(
     let state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
         AppError::internal_error("Missing AppState extension")
     })?;
-    let user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
+    let _user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
         AppError::unauthorized("Authentication required")
     })?;
     
@@ -779,7 +778,7 @@ async fn handle_move(
         }
     } else {
         // Try to move file
-        let file = file_service.get_file_by_path(&source_path).await.map_err(|e| {
+        let file = file_service.get_file_by_path(&source_path).await.map_err(|_e| {
             AppError::not_found(format!("Resource not found: {}", source_path))
         })?;
         
@@ -826,7 +825,7 @@ async fn handle_copy(
     let state = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
         AppError::internal_error("Missing AppState extension")
     })?;
-    let user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
+    let _user = req.extensions().get::<CurrentUser>().ok_or_else(|| {
         AppError::unauthorized("Authentication required")
     })?;
     
@@ -884,7 +883,7 @@ async fn handle_copy(
             }
         };
         
-        let new_folder = folder_service.create_folder(create_dto).await.map_err(|e| {
+        let _new_folder = folder_service.create_folder(create_dto).await.map_err(|e| {
             AppError::internal_error(format!("Failed to create destination folder: {}", e))
         })?;
         
@@ -908,7 +907,7 @@ async fn handle_copy(
         }
     } else {
         // Try to copy file
-        let file = file_service.get_file_by_path(&source_path).await.map_err(|e| {
+        let file = file_service.get_file_by_path(&source_path).await.map_err(|_e| {
             AppError::not_found(format!("Resource not found: {}", source_path))
         })?;
         
@@ -964,7 +963,7 @@ async fn handle_lock(
     };
     
     // Get the state and user in a way that doesn't keep req borrowed
-    let state = {
+    let _state = {
         let state_ref = req.extensions().get::<Arc<AppState>>().ok_or_else(|| {
             AppError::internal_error("Missing AppState extension")
         })?;
@@ -1104,7 +1103,7 @@ async fn handle_unlock(
 ) -> Result<Response<Body>, AppError> {
     // Clone all necessary data first to avoid borrow issues
     let uri = req.uri().clone();
-    let path = {
+    let _path = {
         let parts = uri.path().split('/').collect::<Vec<&str>>();
         if parts.len() > 2 {
             parts[2..].join("/")
@@ -1135,7 +1134,7 @@ async fn handle_unlock(
         .ok_or_else(|| AppError::bad_request("Lock-Token header required"))?;
     
     // Extract token from header value (format: <token>)
-    let token = lock_token
+    let _token = lock_token
         .trim()
         .trim_start_matches('<')
         .trim_end_matches('>')

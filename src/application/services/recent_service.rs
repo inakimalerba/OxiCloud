@@ -45,7 +45,7 @@ impl RecentItemsUseCase for RecentService {
                 item_type as "item_type", 
                 accessed_at as "accessed_at"
             FROM auth.user_recent_files 
-            WHERE user_id = $1
+            WHERE user_id = $1::TEXT
             ORDER BY accessed_at DESC
             LIMIT $2
             "#
@@ -99,7 +99,7 @@ impl RecentItemsUseCase for RecentService {
         sqlx::query(
             r#"
             INSERT INTO auth.user_recent_files (user_id, item_id, item_type, accessed_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            VALUES ($1::TEXT, $2, $3, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, item_id, item_type) 
             DO UPDATE SET accessed_at = CURRENT_TIMESTAMP
             "#
@@ -136,7 +136,7 @@ impl RecentItemsUseCase for RecentService {
         let result = sqlx::query(
             r#"
             DELETE FROM auth.user_recent_files
-            WHERE user_id = $1 AND item_id = $2 AND item_type = $3
+            WHERE user_id = $1::TEXT AND item_id = $2 AND item_type = $3
             "#
         )
         .bind(user_uuid)
@@ -176,7 +176,7 @@ impl RecentItemsUseCase for RecentService {
         sqlx::query(
             r#"
             DELETE FROM auth.user_recent_files
-            WHERE user_id = $1
+            WHERE user_id = $1::TEXT
             "#
         )
         .bind(user_uuid)
@@ -208,7 +208,7 @@ impl RecentService {
             DELETE FROM auth.user_recent_files
             WHERE id IN (
                 SELECT id FROM auth.user_recent_files
-                WHERE user_id = $1
+                WHERE user_id = $1::TEXT
                 ORDER BY accessed_at DESC
                 OFFSET $2
             )

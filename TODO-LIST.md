@@ -39,18 +39,18 @@ This document contains the task list for the development of OxiCloud, a minimali
 
 ### User System
 - [x] Design data model for users
-- [ ] Implement user registration
+- [x] Implement user registration
 - [x] Create login system
 - [ ] Add user profile page
 - [ ] Implement password recovery
 - [ ] Separate storage by user
 
 ### Quotas and Permissions
-- [ ] Implement storage quota system
-- [ ] Add basic role system (admin/user)
+- [x] Implement storage quota system
+- [x] Add basic role system (admin/user)
 - [ ] Create admin panel
 - [ ] Implement folder-level permissions
-- [ ] Add storage usage monitoring
+- [x] Add storage usage monitoring
 
 ### Basic Security
 - [x] Implement secure password hashing with Argon2
@@ -64,10 +64,10 @@ This document contains the task list for the development of OxiCloud, a minimali
 
 ### File Sharing
 - [x] Implement shared link generation
-- [ ] Add permission configuration for links
-- [ ] Implement password protection for links
+- [x] Add permission configuration for links
+- [x] Implement password protection for links
 - [ ] Add expiration dates for shared links
-- [ ] Create page to manage all shared resources
+- [x] Create page to manage all shared resources
 - [ ] Implement sharing notifications
 
 ### Recycle Bin
@@ -89,7 +89,7 @@ This document contains the task list for the development of OxiCloud, a minimali
 ## Phase 4: API and Synchronization
 
 ### Complete REST API
-- [ ] Design OpenAPI specification
+- [x] Design OpenAPI specification
 - [x] Implement endpoints for file operations
 - [x] Add endpoints for users and authentication
 - [ ] Implement automatic documentation (Swagger)
@@ -98,12 +98,14 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Add API versioning
 
 ### WebDAV Support
-- [ ] Implement basic WebDAV server
-- [ ] Add authentication for WebDAV
-- [ ] Implement PROPFIND operations
-- [ ] Add support for locking
+- [x] Implement basic WebDAV server
+- [x] Add authentication for WebDAV
+- [x] Implement PROPFIND operations
+- [x] Add support for locking
 - [ ] Test compatibility with standard clients
 - [ ] Optimize WebDAV performance
+- [ ] Implement Range Requests (RFC 7233) for resumable transfers
+- [ ] Support partial file updates with HTTP PATCH for bandwidth efficiency
 
 ### Sync Client
 - [ ] Design client architecture in Rust
@@ -112,6 +114,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Implement conflict detection
 - [ ] Add configuration options
 - [ ] Create minimal client version for Windows/macOS/Linux
+- [ ] Implement bandwidth throttling controls
+- [ ] Add delta synchronization for large files
+- [ ] Support synchronization pausing and resuming
 
 ## Phase 5: Advanced Features
 
@@ -146,6 +151,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Implement asynchronous processing for heavy tasks
 - [ ] Optimize database queries
 - [ ] Implement scaling strategies
+- [ ] Implement transfer acceleration with multipart chunking
+- [ ] Implement differential sync algorithm (similar to rsync)
+- [ ] Add strong ETag support for more efficient caching
 
 ### Frontend
 - [ ] Optimize initial asset loading
@@ -154,6 +162,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Optimize UI rendering
 - [ ] Implement intelligent prefetching
 - [ ] Add basic offline support
+- [ ] Implement client-side image resizing before upload
+- [ ] Add HTTP/2 support for multiplexing requests
+- [ ] Implement progressive image loading
 
 ### Storage
 - [ ] Research deduplication options
@@ -162,6 +173,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Implement log rotation and archiving
 - [ ] Create automated backup system
 - [ ] Add support for distributed storage
+- [ ] Implement media transcoding for optimized delivery
+- [ ] Add content-aware compression by file format
+- [ ] Implement dynamic thumbnail resizing based on viewport
 
 ## Infrastructure and Deployment
 

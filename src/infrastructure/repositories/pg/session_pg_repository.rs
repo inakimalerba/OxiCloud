@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row, Executor};
+use sqlx::{PgPool, Row};
 use std::sync::Arc;
 use chrono::Utc;
 use futures::future::BoxFuture;

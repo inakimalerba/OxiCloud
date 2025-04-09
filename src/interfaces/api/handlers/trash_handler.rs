@@ -4,7 +4,7 @@ use axum::Json;
 use serde_json::json;
 use tracing::{debug, error, instrument};
 
-use crate::application::ports::trash_ports::TrashUseCase;
+// use crate::application::ports::trash_ports::TrashUseCase;
 use crate::common::di::AppState;
 use crate::interfaces::middleware::auth::AuthUser;
 
