@@ -19,7 +19,7 @@ use crate::domain::repositories::file_repository::{
     FileRepository, FileRepositoryError, FileRepositoryResult
 };
 use crate::application::services::storage_mediator::StorageMediator;
-use crate::application::ports::outbound::IdMappingPort;
+// use crate::application::ports::outbound::IdMappingPort;
 use crate::infrastructure::services::id_mapping_service::IdMappingError;
 use crate::infrastructure::services::file_metadata_cache::{FileMetadataCache, CacheEntryType};
 use crate::domain::services::path_service::{StoragePath, PathService};

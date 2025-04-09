@@ -2,7 +2,7 @@
 FROM rust:1.85-alpine AS cacher
 WORKDIR /app
 RUN apk --no-cache upgrade && \
-    apk add --no-cache musl-dev openssl-dev pkgconfig postgresql-dev
+    apk add --no-cache musl-dev pkgconfig postgresql-dev gcc perl make
 COPY Cargo.toml Cargo.lock ./
 # Create a minimal project to download and cache dependencies
 RUN mkdir -p src && \
@@ -14,7 +14,7 @@ RUN mkdir -p src && \
 FROM rust:1.85-alpine AS builder
 WORKDIR /app
 RUN apk --no-cache upgrade && \
-    apk add --no-cache musl-dev openssl-dev pkgconfig postgresql-dev
+    apk add --no-cache musl-dev pkgconfig postgresql-dev gcc perl make
 # Copy cached dependencies
 COPY --from=cacher /app/target target
 COPY --from=cacher /usr/local/cargo /usr/local/cargo
@@ -30,7 +30,7 @@ RUN cargo build --release
 FROM alpine:3.21.3
 # Install only necessary runtime dependencies and update packages
 RUN apk --no-cache upgrade && \
-    apk add --no-cache libgcc openssl ca-certificates libpq tzdata
+    apk add --no-cache libgcc ca-certificates libpq tzdata
 
 # Copy only the compiled binary
 COPY --from=builder /app/target/release/oxicloud /usr/local/bin/

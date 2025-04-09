@@ -104,6 +104,8 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Add support for locking
 - [ ] Test compatibility with standard clients
 - [ ] Optimize WebDAV performance
+- [ ] Implement Range Requests (RFC 7233) for resumable transfers
+- [ ] Support partial file updates with HTTP PATCH for bandwidth efficiency
 
 ### Sync Client
 - [ ] Design client architecture in Rust
@@ -112,6 +114,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Implement conflict detection
 - [ ] Add configuration options
 - [ ] Create minimal client version for Windows/macOS/Linux
+- [ ] Implement bandwidth throttling controls
+- [ ] Add delta synchronization for large files
+- [ ] Support synchronization pausing and resuming
 
 ## Phase 5: Advanced Features
 
@@ -146,6 +151,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Implement asynchronous processing for heavy tasks
 - [ ] Optimize database queries
 - [ ] Implement scaling strategies
+- [ ] Implement transfer acceleration with multipart chunking
+- [ ] Implement differential sync algorithm (similar to rsync)
+- [ ] Add strong ETag support for more efficient caching
 
 ### Frontend
 - [ ] Optimize initial asset loading
@@ -154,6 +162,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Optimize UI rendering
 - [ ] Implement intelligent prefetching
 - [ ] Add basic offline support
+- [ ] Implement client-side image resizing before upload
+- [ ] Add HTTP/2 support for multiplexing requests
+- [ ] Implement progressive image loading
 
 ### Storage
 - [ ] Research deduplication options
@@ -162,6 +173,9 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Implement log rotation and archiving
 - [ ] Create automated backup system
 - [ ] Add support for distributed storage
+- [ ] Implement media transcoding for optimized delivery
+- [ ] Add content-aware compression by file format
+- [ ] Implement dynamic thumbnail resizing based on viewport
 
 ## Infrastructure and Deployment
 

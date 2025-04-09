@@ -210,7 +210,7 @@ impl WebDavAdapter {
         files: &[FileDto],
         subfolders: &[FolderDto],
         request: &PropFindRequest,
-        depth: &str,
+        _depth: &str,
         base_href: &str,
     ) -> Result<()> {
         let mut xml_writer = Writer::new(writer);
@@ -226,7 +226,7 @@ impl WebDavAdapter {
         }
         
         // If depth allows, add responses for files and subfolders
-        if depth != "0" {
+        if _depth != "0" {
             // Add responses for files
             for file in files {
                 Self::write_file_response(&mut xml_writer, file, request, &format!("{}{}", base_href, file.name))?;
@@ -249,7 +249,7 @@ impl WebDavAdapter {
         writer: W,
         file: &FileDto,
         request: &PropFindRequest,
-        depth: &str,
+        _depth: &str,
         href: &str,
     ) -> Result<()> {
         let mut xml_writer = Writer::new(writer);

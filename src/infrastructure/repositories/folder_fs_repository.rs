@@ -11,7 +11,7 @@ use crate::domain::repositories::folder_repository::{
     FolderRepository, FolderRepositoryError, FolderRepositoryResult
 };
 use crate::domain::services::path_service::{StoragePath, PathService};
-use crate::application::ports::outbound::IdMappingPort;
+// use crate::application::ports::outbound::IdMappingPort;
 use crate::infrastructure::services::id_mapping_service::{IdMappingService, IdMappingError};
 use crate::application::services::storage_mediator::StorageMediator;
 use crate::application::ports::outbound::FolderStoragePort;

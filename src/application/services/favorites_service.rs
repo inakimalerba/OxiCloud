@@ -38,7 +38,7 @@ impl FavoritesUseCase for FavoritesService {
                 item_type as "item_type", 
                 created_at as "created_at"
             FROM auth.user_favorites 
-            WHERE user_id = $1
+            WHERE user_id = $1::TEXT
             ORDER BY created_at DESC
             "#
         )
@@ -90,7 +90,7 @@ impl FavoritesUseCase for FavoritesService {
         sqlx::query(
             r#"
             INSERT INTO auth.user_favorites (user_id, item_id, item_type)
-            VALUES ($1, $2, $3)
+            VALUES ($1::TEXT, $2, $3)
             ON CONFLICT (user_id, item_id, item_type) DO NOTHING
             "#
         )
@@ -123,7 +123,7 @@ impl FavoritesUseCase for FavoritesService {
         let result = sqlx::query(
             r#"
             DELETE FROM auth.user_favorites
-            WHERE user_id = $1 AND item_id = $2 AND item_type = $3
+            WHERE user_id = $1::TEXT AND item_id = $2 AND item_type = $3
             "#
         )
         .bind(user_uuid)
@@ -164,7 +164,7 @@ impl FavoritesUseCase for FavoritesService {
             r#"
             SELECT EXISTS (
                 SELECT 1 FROM auth.user_favorites
-                WHERE user_id = $1 AND item_id = $2 AND item_type = $3
+                WHERE user_id = $1::TEXT AND item_id = $2 AND item_type = $3
             ) AS "is_favorite"
             "#
         )
