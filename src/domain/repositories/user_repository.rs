@@ -86,6 +86,9 @@ pub trait UserRepository: Send + Sync + 'static {
     /// Cambia el rol de un usuario
     async fn change_role(&self, user_id: &str, role: UserRole) -> UserRepositoryResult<()>;
     
+    /// Lista usuarios por rol (admin o user)
+    async fn list_users_by_role(&self, role: &str) -> UserRepositoryResult<Vec<User>>;
+    
     /// Elimina un usuario
     async fn delete_user(&self, user_id: &str) -> UserRepositoryResult<()>;
 }

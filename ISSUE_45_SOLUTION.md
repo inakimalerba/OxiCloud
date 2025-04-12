@@ -1,89 +1,103 @@
-# Solución para el issue #45: [BUG] Admin already exists?
+# Solución para el error "El usuario 'admin' ya existe"
 
-## Descripción del problema
+## Problema
 
-Al intentar configurar un usuario administrador, algunos usuarios reciben el error:
+Cuando se intenta crear un usuario administrador en una instalación nueva de OxiCloud, aparece el siguiente error:
 
 ```
-2025-04-09T14:01:26.733566Z ERROR oxicloud::interfaces::api::handlers::auth_handler: Registration failed for user admin: Already Exists: El usuario 'admin' ya existe
+oxicloud-1 | 2025-04-12T10:47:26.643669Z ERROR oxicloud::interfaces::api::handlers::auth_handler: Registration failed for user admin: Already Exists: El usuario 'admin' ya existe
 ```
 
-## Causa raíz
-
-Este problema ocurre debido a cómo está implementada la migración de datos inicial. En el archivo `migrations/20250408000001_default_users.sql`, el sistema intenta crear un usuario admin por defecto durante la migración inicial, pero:
-
-1. Si luego el usuario intenta crear manualmente otro usuario con nombre "admin", el sistema detecta el conflicto.
-2. La cláusula `ON CONFLICT (id) DO NOTHING` solo previene conflictos en el ID, no en el nombre de usuario.
+Este error ocurre porque las migraciones de la base de datos ya crean un usuario administrador por defecto como parte del proceso de inicialización.
 
 ## Solución implementada
 
-Hemos realizado los siguientes cambios:
+Hemos mejorado el sistema para que maneje mejor el registro de usuarios administradores:
 
-1. Modificado `migrations/20250408000001_default_users.sql` para comprobar primero si el usuario "admin" ya existe:
+1. **En una instalación nueva**: 
+   - Si registras cualquier usuario como administrador (sea cual sea su nombre), el sistema detectará que es una instalación nueva y eliminará automáticamente el usuario admin predeterminado.
+   - Esto te permite crear tu propio usuario administrador con el nombre que prefieras desde el principio.
 
-```sql
--- Check if admin user already exists before creating it
-DO $$$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE username = 'admin') THEN
-        -- Create admin user (password: Admin123!)
-        INSERT INTO auth.users (
-            id, 
-            username, 
-            ...
-        ) VALUES (...);
-    END IF;
-END;
-$$$;
-```
+2. **En un sistema en uso**: 
+   - No se permite crear nuevos usuarios administradores desde la página de registro una vez que ya existe un administrador en el sistema
+   - Esto previene la creación no autorizada de usuarios con permisos elevados
+   - El sistema tampoco permite tener múltiples usuarios con el mismo nombre (incluido "admin")
 
-2. Creado un script `scripts/reset_admin.sql` que puede ejecutarse para eliminar el usuario admin existente:
+### Detalles técnicos
 
-```sql
--- Set the correct schema
-SET search_path TO auth;
+La solución implementa:
 
--- Delete the admin user if it exists
-DELETE FROM auth.users WHERE username = 'admin';
+1. Detección inteligente de instalaciones nuevas basada en:
+   - Verificación del número total de usuarios en el sistema
+   - Verificación del número de usuarios administradores
+   
+2. Reconocimiento de usuarios administradores:
+   - Un usuario es administrador si su nombre es "admin"
+   - Un usuario es administrador si se proporciona un rol "admin" explícitamente
+   - Los administradores reciben automáticamente una cuota de 100GB
+   
+3. Eliminación segura del usuario admin predeterminado:
+   - Se detecta al inicio del registro si es una instalación nueva
+   - Se elimina el admin predeterminado antes de continuar con el registro
+   
+4. Prevención de creación de múltiples administradores:
+   - Una vez que existe un usuario administrador en el sistema, no se permite crear más administradores desde la página de registro
+   - Solo se puede crear un administrador desde la página de registro durante la instalación inicial
+   - Esto protege el sistema contra la creación no autorizada de usuarios con privilegios elevados
 
--- Output remaining users for verification
-SELECT username, email, role FROM auth.users ORDER BY role, username;
-```
+## Cómo usar esta funcionalidad
 
-3. Actualizado la documentación en `doc/DATABASE-MIGRATIONS.md` con instrucciones detalladas para resolver este problema.
+### En una instalación nueva:
 
-## Instrucciones para usuarios afectados
+1. Inicia OxiCloud por primera vez (las migraciones crearán automáticamente un usuario admin predeterminado)
+2. Ve a la pantalla de registro y crea un usuario con:
+   - **Nombre de usuario**: Cualquier nombre que prefieras (por ejemplo, "torrefacto")
+   - **Contraseña**: La que tú quieras
+   - **Email**: Tu correo electrónico
+3. El sistema detectará automáticamente que se trata de una instalación nueva
+4. Si es un usuario administrador (porque el nombre es "admin" o porque explícitamente quieres que sea admin), el sistema eliminará el admin predeterminado antes de continuar
+5. Tu nuevo usuario se creará y podrás iniciar sesión con él
 
-Si encuentras el error "Admin already exists", tienes dos opciones:
+### Si necesitas restablecer el usuario administrador:
 
-### Opción 1: Usar el script proporcionado
+Si ya tienes un sistema en uso y necesitas restablecer el usuario administrador:
+
+#### Opción 1: Usar el script proporcionado
 ```bash
 cat scripts/reset_admin.sql | docker exec -i oxicloud-postgres-1 psql -U postgres -d oxicloud
 ```
 
-### Opción 2: Hacerlo manualmente
-1. Conéctate al contenedor de PostgreSQL:
+#### Opción 2: Hacerlo manualmente
 ```bash
-# Encuentra el contenedor
-docker ps
-# Ejemplo: oxicloud-postgres-1
-docker exec -it oxicloud-postgres-1 bash
+docker exec -it oxicloud-postgres-1 psql -U postgres -d oxicloud
 ```
 
-2. Conéctate a la base de datos:
-```bash
-psql -U postgres -d oxicloud
-```
-
-3. Borra el usuario admin existente:
 ```sql
 SET search_path TO auth;
 DELETE FROM auth.users WHERE username = 'admin';
-```
-
-4. Verifica que se eliminó correctamente:
-```sql
 SELECT username, email, role FROM auth.users;
 ```
 
-5. Sal y registra un nuevo usuario admin a través de la interfaz web.
+Luego registra un nuevo usuario admin a través de la interfaz web.
+
+## Nota técnica
+
+El usuario administrador predeterminado se crea durante las migraciones con estos valores:
+
+```sql
+INSERT INTO auth.users (
+    id, 
+    username, 
+    email, 
+    password_hash, 
+    role, 
+    storage_quota_bytes
+) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    'admin',
+    'admin@oxicloud.local',
+    '$argon2id$v=19$m=65536,t=3,p=4$c2FsdHNhbHRzYWx0c2FsdA$H3VxE8LL2qPT31DM3loTg6D+O4MSc2sD7GjlQ5h7Jkw', -- Admin123!
+    'admin',
+    107374182400  -- 100GB for admin
+);
+```
