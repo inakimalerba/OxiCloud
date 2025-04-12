@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::Stream;
+use serde_json::Value;
 
 use crate::domain::entities::file::File;
 use crate::domain::services::path_service::StoragePath;
@@ -83,4 +84,11 @@ pub trait StorageUsagePort: Send + Sync + 'static {
     
     /// Actualiza estadísticas de uso de almacenamiento para todos los usuarios
     async fn update_all_users_storage_usage(&self) -> Result<(), DomainError>;
+}
+
+/// Generic storage service interface for calendar and contact services
+#[async_trait]
+pub trait StorageUseCase: Send + Sync + 'static {
+    /// Handle a request with the specified action and parameters
+    async fn handle_request(&self, action: &str, params: Value) -> Result<Value, DomainError>;
 }

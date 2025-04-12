@@ -87,7 +87,7 @@ impl From<FileServiceError> for DomainError {
         match err {
             FileServiceError::NotFound(id) => DomainError::not_found("File", id),
             FileServiceError::Conflict(path) => DomainError::already_exists("File", path),
-            FileServiceError::InvalidPath(path) => DomainError::validation_error("File", format!("Invalid path: {}", path)),
+            FileServiceError::InvalidPath(path) => DomainError::validation_error(format!("Invalid path: {}", path)),
             FileServiceError::AccessError(msg) => DomainError::access_denied("File", msg),
             FileServiceError::InternalError(msg) => DomainError::internal_error("File", msg),
         }

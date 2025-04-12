@@ -47,8 +47,8 @@ impl From<ShareServiceError> for DomainError {
             ShareServiceError::InvalidPassword(s) => DomainError::access_denied("Share", s),
             ShareServiceError::Expired => DomainError::access_denied("Share", "Share has expired".to_string()),
             ShareServiceError::Repository(s) => DomainError::internal_error("Share", s),
-            ShareServiceError::InvalidItemType(s) => DomainError::validation_error("Share", s),
-            ShareServiceError::Validation(s) => DomainError::validation_error("Share", s),
+            ShareServiceError::InvalidItemType(s) => DomainError::validation_error(s),
+            ShareServiceError::Validation(s) => DomainError::validation_error(s),
         }
     }
 }

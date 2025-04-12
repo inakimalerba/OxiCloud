@@ -39,7 +39,7 @@ impl From<UserRepositoryError> for DomainError {
                 DomainError::internal_error("Database", msg)
             },
             UserRepositoryError::ValidationError(msg) => {
-                DomainError::validation_error("User", msg)
+                DomainError::validation_error(msg)
             },
             UserRepositoryError::Timeout(msg) => {
                 DomainError::timeout("Database", msg)
