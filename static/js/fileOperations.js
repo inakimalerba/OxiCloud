@@ -138,27 +138,14 @@ const fileOps = {
      */
     async createFolder(name) {
         try {
-            // Para simular en el entorno de desarrollo
             console.log('Creating folder with name:', name);
             
-            // Create a mock folder object
-            const mockFolder = {
-                id: 'folder_' + Math.random().toString(36).substring(2, 15),
-                name: name,
-                parent_id: window.app.currentPath || null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            
-            // Add to UI directly
-            window.ui.addFolderToView(mockFolder);
-            window.ui.showNotification('Carpeta creada', `"${name}" creada correctamente`);
-            
-            /* Commented for development
+            // Enviar la solicitud real al backend para crear la carpeta
             const response = await fetch('/api/folders', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
                 },
                 body: JSON.stringify({
                     name: name,
@@ -167,14 +154,25 @@ const fileOps = {
             });
 
             if (response.ok) {
-                window.loadFiles();
+                // Obtener la carpeta creada del backend
+                const folder = await response.json();
+                console.log('Folder created successfully:', folder);
+                
+                // Añadir la carpeta a la vista de inmediato para feedback instantáneo
+                window.ui.addFolderToView(folder);
+                
+                // Esperar para permitir que el backend guarde los cambios
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Recargar los archivos para refrescar la vista
+                await window.loadFiles({forceRefresh: true});
+                
                 window.ui.showNotification('Carpeta creada', `"${name}" creada correctamente`);
             } else {
                 const errorData = await response.text();
                 console.error('Create folder error:', errorData);
                 window.ui.showNotification('Error', 'Error al crear la carpeta');
             }
-            */
         } catch (error) {
             console.error('Error creating folder:', error);
             window.ui.showNotification('Error', 'Error al crear la carpeta');
