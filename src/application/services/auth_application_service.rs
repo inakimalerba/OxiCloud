@@ -53,16 +53,87 @@ impl AuthApplicationService {
             ));
         }
         
-        // Cuota predeterminada: 1GB (ajustable según plan)
-        let default_quota = 1024 * 1024 * 1024; // 1GB
+        // Verificar si el usuario quiere crear un admin
+        let is_admin_request = dto.username.to_lowercase() == "admin" || 
+            (dto.role.is_some() && dto.role.as_ref().unwrap().to_lowercase() == "admin");
+            
+        // Si está intentando crear un admin, verificar si ya existen admins en el sistema
+        if is_admin_request {
+            match self.count_admin_users().await {
+                Ok(admin_count) => {
+                    // Si ya hay admins en el sistema y no estamos en instalación limpia,
+                    // no permitimos crear otro admin desde el registro
+                    if admin_count > 0 {
+                        // Verificar si es una instalación limpia (solo el admin predeterminado)
+                        match self.count_all_users().await {
+                            Ok(user_count) => {
+                                // Si hay más de 2 usuarios (admin + test), no es instalación limpia
+                                if user_count > 2 {
+                                    tracing::warn!("Intento de crear admin adicional rechazado: ya existe al menos un admin");
+                                    return Err(DomainError::new(
+                                        ErrorKind::AccessDenied,
+                                        "User",
+                                        "No se permite crear usuarios admin adicionales desde la página de registro"
+                                    ));
+                                }
+                                // En caso contrario, es instalación limpia y se permite el primer admin
+                                tracing::info!("Permitiendo creación de admin en instalación limpia");
+                            },
+                            Err(e) => {
+                                tracing::error!("Error al contar usuarios: {}", e);
+                                // Por seguridad, si no podemos verificar, rechazamos la creación de admin
+                                return Err(DomainError::new(
+                                    ErrorKind::AccessDenied,
+                                    "User",
+                                    "No se permite crear usuarios admin adicionales"
+                                ));
+                            }
+                        }
+                    }
+                },
+                Err(e) => {
+                    tracing::error!("Error al contar usuarios admin: {}", e);
+                    // Por seguridad, si no podemos verificar, rechazamos la creación de admin
+                    return Err(DomainError::new(
+                        ErrorKind::AccessDenied,
+                        "User",
+                        "No se permite crear usuarios admin adicionales"
+                    ));
+                }
+            }
+        }
+        
+        // Determinar rol y cuota según el tipo de usuario
+        // Si se proporciona un rol explícito de "admin", usar rol de administrador
+        let role = if let Some(role_str) = &dto.role {
+            if role_str.to_lowercase() == "admin" {
+                UserRole::Admin
+            } else {
+                UserRole::User
+            }
+        } else {
+            // Caso especial: si el nombre es "admin", asignar rol de admin aunque no se especifique
+            if dto.username.to_lowercase() == "admin" {
+                UserRole::Admin
+            } else {
+                UserRole::User
+            }
+        };
+        
+        // Cuota según el rol: 100GB para admin, 1GB para usuarios normales
+        let quota = if role == UserRole::Admin {
+            107374182400 // 100GB para admin
+        } else {
+            1024 * 1024 * 1024 // 1GB para usuarios normales
+        };
         
         // Crear usuario
         let user = User::new(
             dto.username.clone(),
             dto.email,
             dto.password,
-            UserRole::User, // Por defecto: usuario normal
-            default_quota,
+            role,
+            quota,
         ).map_err(|e| DomainError::new(
             ErrorKind::InvalidInput,
             "User",
@@ -312,6 +383,129 @@ impl AuthApplicationService {
     // Alias for consistency with handler method
     pub async fn get_user_by_id(&self, user_id: &str) -> Result<UserDto, DomainError> {
         self.get_user(user_id).await
+    }
+    
+    // New method to get user by username - needed for admin user handling
+    pub async fn get_user_by_username(&self, username: &str) -> Result<UserDto, DomainError> {
+        let user = self.user_storage.get_user_by_username(username).await?;
+        Ok(UserDto::from(user))
+    }
+    
+    // Method to count how many admin users exist in the system
+    // Used to determine if we have multiple admins or just the default one
+    pub async fn count_admin_users(&self) -> Result<i64, DomainError> {
+        // Use the list_users_by_role method or similar from user_storage port
+        // For now, we'll use a basic implementation that counts all users with role = "admin"
+        let admin_users = self.user_storage.list_users_by_role("admin").await
+            .map_err(|e| DomainError::new(
+                ErrorKind::InternalError,
+                "User",
+                format!("Error al contar usuarios administradores: {}", e)
+            ))?;
+        
+        Ok(admin_users.len() as i64)
+    }
+    
+    // Method to count all users in the system
+    // Used to determine if this is a fresh install
+    pub async fn count_all_users(&self) -> Result<i64, DomainError> {
+        // Get all users with large limit and 0 offset
+        let all_users = self.user_storage.list_users(1000, 0).await
+            .map_err(|e| DomainError::new(
+                ErrorKind::InternalError,
+                "User", 
+                format!("Error al contar usuarios: {}", e)
+            ))?;
+            
+        Ok(all_users.len() as i64)
+    }
+    
+    // Method to delete the default admin user created by migrations
+    // Used in fresh installations before creating a custom admin
+    pub async fn delete_default_admin(&self) -> Result<(), DomainError> {
+        // Find the default admin user (created by migrations)
+        match self.get_user_by_username("admin").await {
+            Ok(default_admin) => {
+                // Delete the default admin user
+                self.user_storage.delete_user(&default_admin.id).await
+                    .map_err(|e| DomainError::new(
+                        ErrorKind::InternalError,
+                        "User",
+                        format!("Error al eliminar usuario admin predeterminado: {}", e)
+                    ))
+            },
+            Err(_) => {
+                // Admin user doesn't exist, nothing to do
+                tracing::info!("Default admin user not found, nothing to delete");
+                Ok(())
+            }
+        }
+    }
+    
+    // Method to replace the default admin user with a custom one
+    // Used in fresh installations to allow users to set their own admin credentials
+    pub async fn replace_default_admin(&self, dto: &RegisterDto) -> Result<UserDto, DomainError> {
+        // 1. Get the default admin user
+        let default_admin = self.get_user_by_username("admin").await?;
+        
+        // 2. Delete the default admin user
+        self.user_storage.delete_user(&default_admin.id).await
+            .map_err(|e| DomainError::new(
+                ErrorKind::InternalError,
+                "User",
+                format!("Error al eliminar usuario admin predeterminado: {}", e)
+            ))?;
+            
+        // 3. Create new admin user with the provided credentials but admin role
+        let admin_role = UserRole::Admin;
+        
+        // Use 100GB for admin quota
+        let admin_quota = 107374182400;
+        
+        // Create the new admin user
+        let user = User::new(
+            dto.username.clone(),
+            dto.email.clone(),
+            dto.password.clone(),
+            admin_role,
+            admin_quota,
+        ).map_err(|e| DomainError::new(
+            ErrorKind::InvalidInput,
+            "User",
+            format!("Error al crear usuario admin: {}", e)
+        ))?;
+        
+        // 4. Save the new admin user
+        let created_user = self.user_storage.create_user(user).await?;
+        
+        // 5. Create personal folder for the new admin if folder service is available
+        if let Some(folder_service) = &self.folder_service {
+            let folder_name = format!("Mi Carpeta - {}", dto.username);
+            
+            match folder_service.create_folder(CreateFolderDto {
+                name: folder_name,
+                parent_id: None,
+            }).await {
+                Ok(folder) => {
+                    tracing::info!(
+                        "Carpeta personal creada para el admin {}: {} (ID: {})", 
+                        created_user.id(), 
+                        folder.name, 
+                        folder.id
+                    );
+                },
+                Err(e) => {
+                    tracing::error!(
+                        "No se pudo crear la carpeta personal para el admin {}: {}", 
+                        created_user.id(), 
+                        e
+                    );
+                }
+            }
+        }
+        
+        tracing::info!("Admin personalizado creado: {}", created_user.id());
+        Ok(UserDto::from(created_user))
     }
     
     pub async fn list_users(&self, limit: i64, offset: i64) -> Result<Vec<UserDto>, DomainError> {

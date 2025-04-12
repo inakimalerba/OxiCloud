@@ -26,6 +26,12 @@ pub trait UserStoragePort: Send + Sync + 'static {
     /// Lista usuarios con paginación
     async fn list_users(&self, limit: i64, offset: i64) -> Result<Vec<User>, DomainError>;
     
+    /// Lista usuarios por rol (por ejemplo, "admin" o "user")
+    async fn list_users_by_role(&self, role: &str) -> Result<Vec<User>, DomainError>;
+    
+    /// Elimina un usuario por su ID
+    async fn delete_user(&self, user_id: &str) -> Result<(), DomainError>;
+    
     /// Cambia la contraseña de un usuario
     async fn change_password(&self, user_id: &str, password_hash: &str) -> Result<(), DomainError>;
 }
