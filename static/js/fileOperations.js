@@ -39,7 +39,13 @@ const fileOps = {
                 
                 const response = await fetch('/api/files/upload', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    // Añadir cache: 'no-store' para evitar problemas de caché durante la subida
+                    cache: 'no-store',
+                    headers: {
+                        // Agregar este encabezado para forzar recargas frescas
+                        'Cache-Control': 'no-cache, no-store, must-revalidate'
+                    }
                 });
                 
                 console.log('Respuesta del servidor:', {
@@ -55,11 +61,57 @@ const fileOps = {
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log(`Successfully uploaded ${file.name}`, responseData);
+                    
+                    // Agregar el archivo a la vista inmediatamente para mostrar retroalimentación instantánea
+                    // Esto permite que el usuario vea el archivo aunque el refresco posterior falle
+                    if (window.ui && window.ui.addFileToView) {
+                        console.log('Añadiendo archivo subido directamente a la vista:', responseData);
+                        window.ui.addFileToView(responseData);
+                        window.ui.updateFileIcons();
+                    }
 
                     if (i === totalFiles - 1) {
                         // Last file uploaded
                         console.log('Recargando lista de archivos después de subida');
-                        window.loadFiles();
+                        
+                        try {
+                            // Esperar 1500ms para asegurar que los mapeos de ID se guarden
+                            // Tiempo aumentado significativamente para permitir al backend completar persistencia
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            
+                            // Forzar recarga de archivos con parámetro de bypass de caché
+                            const timestamp = new Date().getTime();
+                            const filesUrl = `/api/files?t=${timestamp}&folder_id=${window.app.currentPath || ''}`;
+                            
+                            console.log(`Recargando lista de archivos desde: ${filesUrl}`);
+                            const filesResponse = await fetch(filesUrl, {
+                                cache: 'no-store',
+                                headers: {
+                                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                    'Pragma': 'no-cache'
+                                }
+                            });
+                            
+                            if (filesResponse.ok) {
+                                const files = await filesResponse.json();
+                                console.log(`Recarga de archivos completada, obtenidos ${files.length} archivos`);
+                            }
+                            
+                            // Esperar un momento más antes de la recarga final
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            // Hacer una única recarga final forzando refresco completo
+                            await window.loadFiles({forceRefresh: true});
+                            
+                            // Asegurarse de que no haya recargas adicionales o duplicados
+                        } catch (reloadError) {
+                            console.error("Error durante recarga de archivos:", reloadError);
+                            // Intentar recargar lista de nuevo en caso de error
+                            await window.loadFiles({forceRefresh: true});
+                            // Segundo intento con retraso y forzando refresco
+                            setTimeout(() => window.loadFiles({forceRefresh: true}), 500);
+                        }
+                        
                         setTimeout(() => {
                             document.getElementById('dropzone').style.display = 'none';
                             uploadProgressDiv.style.display = 'none';
@@ -86,27 +138,14 @@ const fileOps = {
      */
     async createFolder(name) {
         try {
-            // Para simular en el entorno de desarrollo
             console.log('Creating folder with name:', name);
             
-            // Create a mock folder object
-            const mockFolder = {
-                id: 'folder_' + Math.random().toString(36).substring(2, 15),
-                name: name,
-                parent_id: window.app.currentPath || null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            
-            // Add to UI directly
-            window.ui.addFolderToView(mockFolder);
-            window.ui.showNotification('Carpeta creada', `"${name}" creada correctamente`);
-            
-            /* Commented for development
+            // Enviar la solicitud real al backend para crear la carpeta
             const response = await fetch('/api/folders', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
                 },
                 body: JSON.stringify({
                     name: name,
@@ -115,14 +154,25 @@ const fileOps = {
             });
 
             if (response.ok) {
-                window.loadFiles();
+                // Obtener la carpeta creada del backend
+                const folder = await response.json();
+                console.log('Folder created successfully:', folder);
+                
+                // Añadir la carpeta a la vista de inmediato para feedback instantáneo
+                window.ui.addFolderToView(folder);
+                
+                // Esperar para permitir que el backend guarde los cambios
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Recargar los archivos para refrescar la vista
+                await window.loadFiles({forceRefresh: true});
+                
                 window.ui.showNotification('Carpeta creada', `"${name}" creada correctamente`);
             } else {
                 const errorData = await response.text();
                 console.error('Create folder error:', errorData);
                 window.ui.showNotification('Error', 'Error al crear la carpeta');
             }
-            */
         } catch (error) {
             console.error('Error creating folder:', error);
             window.ui.showNotification('Error', 'Error al crear la carpeta');

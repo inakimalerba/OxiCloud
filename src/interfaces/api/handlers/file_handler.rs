@@ -122,9 +122,33 @@ impl FileHandler {
                     // Log additional debugging information
                     tracing::info!("Created file details: folder_id={:?}, size={}, path={}",
                         file.folder_id, file.size, file.path);
+                        
+                    // VERIFICACIÓN ADICIONAL: Comprobar que el archivo es accesible inmediatamente después de subir
+                    let file_id = file.id.clone(); // Clonar para uso en la verificación
+                    match service.get_file(&file_id).await {
+                        Ok(_) => tracing::info!("Verified file is immediately accessible after upload: {}", file_id),
+                        Err(e) => {
+                            tracing::warn!("File uploaded but not immediately accessible: {} - {}. This could cause issues in frontend.", file_id, e);
+                            // Esperar un momento y comprobar de nuevo
+                            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+                            if let Err(retry_e) = service.get_file(&file_id).await {
+                                tracing::error!("File still not accessible after retry: {} - {}", file_id, retry_e);
+                            } else {
+                                tracing::info!("File became accessible after short delay: {}", file_id);
+                            }
+                        }
+                    }
                     
-                    // Return success response with file information
-                    (StatusCode::CREATED, Json(file)).into_response()
+                    // Añadir cabecera para evitar caché del navegador en respuestas
+                    let response = Response::builder()
+                        .status(StatusCode::CREATED)
+                        .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                        .header("Pragma", "no-cache")
+                        .header("Expires", "0")
+                        .body(axum::body::Body::from(serde_json::to_string(&file).unwrap()))
+                        .unwrap();
+                    
+                    response
                 },
                 Err(err) => {
                     tracing::error!("Error uploading file '{}' through service: {}", filename, err);
@@ -434,8 +458,16 @@ impl FileHandler {
                     tracing::info!("No files found in folder through service");
                 }
                 
-                // Return the files as JSON response
-                (StatusCode::OK, Json(files)).into_response()
+                // Devolver respuesta con cabeceras para evitar caché del navegador
+                let response = Response::builder()
+                    .status(StatusCode::OK)
+                    .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    .header("Pragma", "no-cache")
+                    .header("Expires", "0")
+                    .body(axum::body::Body::from(serde_json::to_string(&files).unwrap()))
+                    .unwrap();
+                
+                response
             },
             Err(err) => {
                 tracing::error!("Error listing files through service: {}", err);
