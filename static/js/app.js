@@ -383,8 +383,21 @@ function setupEventListeners() {
 /**
  * Load files and folders for the current path
  */
-async function loadFiles() {
+async function loadFiles(options = {}) {
     try {
+        console.log("Iniciando loadFiles() - cargando archivos...", options);
+        
+        // Flag para forzar el refresco completo ignorando caché
+        const forceRefresh = options.forceRefresh || false;
+        
+        // Prevenir múltiples solicitudes de carga simultáneas
+        if (window.isLoadingFiles) {
+            console.log("Ya hay una carga de archivos en progreso, ignorando solicitud");
+            return;
+        }
+        
+        window.isLoadingFiles = true;
+        
         // Always ensure a userHomeFolderId is set
         if (!app.userHomeFolderId) {
             // If we don't have a home folder ID yet, try to get the user's username
@@ -392,34 +405,50 @@ async function loadFiles() {
             const userData = JSON.parse(localStorage.getItem(USER_DATA_KEY) || '{}');
             if (userData.username) {
                 // Find user's home folder
+                console.log("Buscando carpeta de usuario para", userData.username);
                 await findUserHomeFolder(userData.username);
             }
         }
         
+        // Agregar timestamp para evitar caché
+        const timestamp = new Date().getTime();
         let url;
+        
         // ALWAYS use the userHomeFolderId (current folder or home folder) to avoid showing root
         if (!app.currentPath || app.currentPath === '') {
             // If at root, force user to their home folder
             if (app.userHomeFolderId) {
-                url = `/api/folders/${app.userHomeFolderId}/contents`;
+                url = `/api/folders/${app.userHomeFolderId}/contents?t=${timestamp}`;
                 app.currentPath = app.userHomeFolderId;
                 ui.updateBreadcrumb(app.userHomeFolderName || 'Home');
+                console.log(`Cargando carpeta del usuario: ${app.userHomeFolderName} (${app.userHomeFolderId})`);
             } else {
                 // Emergency fallback - this should rarely happen but prevents errors
-                url = '/api/folders';
+                url = `/api/folders?t=${timestamp}`;
                 console.warn("Emergency fallback to root folder - this should not normally happen");
             }
         } else {
             // Normal case - viewing subfolder contents
-            url = `/api/folders/${app.currentPath}/contents`;
+            url = `/api/folders/${app.currentPath}/contents?t=${timestamp}`;
+            console.log(`Cargando contenido de subcarpeta: ${app.currentPath}`);
         }
         
         const token = localStorage.getItem('oxicloud_token');
         const requestOptions = {
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            },
+            cache: 'no-store'  // Instruir al navegador a no usar caché
         };
+        
+        // Si se especifica forceRefresh, agregar un parámetro adicional para evitar caché
+        if (forceRefresh) {
+            url += `&force_refresh=true`;
+            requestOptions.headers['X-Force-Refresh'] = 'true';
+            console.log('Forzando refresco completo ignorando caché');
+        }
         
         console.log(`Loading files from ${url}`);
         const response = await fetch(url, requestOptions);
@@ -490,10 +519,12 @@ async function loadFiles() {
         });
         
         // Also load files in this folder
-        let filesUrl = '/api/files';
+        const cacheTimestamp = new Date().getTime();
+        let filesUrl = `/api/files?t=${cacheTimestamp}`; // Agregar timestamp para evitar problemas de caché
         if (app.currentPath) {
-            filesUrl += `?folder_id=${app.currentPath}`;
+            filesUrl += `&folder_id=${app.currentPath}`;
         }
+        console.log(`Cargando archivos desde: ${filesUrl}`);
         
         try {
             console.log(`Fetching files from: ${filesUrl}`);
@@ -532,6 +563,9 @@ async function loadFiles() {
     } catch (error) {
         console.error('Error loading folders:', error);
         ui.showNotification('Error', 'Could not load files and folders');
+    } finally {
+        // Marcar que ya no estamos cargando archivos para permitir solicitudes futuras
+        window.isLoadingFiles = false;
     }
 }
 

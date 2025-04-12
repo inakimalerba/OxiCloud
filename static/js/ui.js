@@ -518,6 +518,15 @@ const ui = {
      * @param {Object} folder - Folder object
      */
     addFolderToView(folder) {
+        // Verificar si la carpeta ya existe en la vista para evitar duplicados
+        if (document.querySelector(`.file-card[data-folder-id="${folder.id}"]`) || 
+            document.querySelector(`.file-item[data-folder-id="${folder.id}"]`)) {
+            console.log(`Carpeta ${folder.name} (${folder.id}) ya existe en la vista, no duplicando`);
+            return;
+        }
+        
+        console.log(`Añadiendo carpeta a la vista: ${folder.name} (${folder.id})`);
+        
         // Grid view element
         const folderGridElement = document.createElement('div');
         folderGridElement.className = 'file-card';
@@ -709,6 +718,15 @@ const ui = {
      * @param {Object} file - File object
      */
     addFileToView(file) {
+        // Verificar si el archivo ya existe en la vista para evitar duplicados
+        if (document.querySelector(`.file-card[data-file-id="${file.id}"]`) ||
+            document.querySelector(`.file-item[data-file-id="${file.id}"]`)) {
+            console.log(`Archivo ${file.name} (${file.id}) ya existe en la vista, no duplicando`);
+            return;
+        }
+        
+        console.log(`Añadiendo archivo a la vista: ${file.name} (${file.id})`);
+        
         // Determine icon and type
         let iconClass = 'fas fa-file';
         let iconSpecialClass = '';

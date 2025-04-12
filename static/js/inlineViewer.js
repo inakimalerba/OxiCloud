@@ -15,6 +15,13 @@ class InlineViewer {
       return;
     }
     
+    // Verify document.body exists
+    if (!document.body) {
+      console.warn('Document body not available yet for inline viewer, will retry later');
+      setTimeout(() => this.setupViewer(), 200);
+      return;
+    }
+    
     // Create modal container
     const modal = document.createElement('div');
     modal.id = 'inline-viewer-modal';
@@ -325,5 +332,21 @@ class InlineViewer {
   }
 }
 
-// Initialize viewer
-window.inlineViewer = new InlineViewer();
+// Initialize viewer when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Check if it's already initialized
+  if (!window.inlineViewer) {
+    console.log('Initializing inline viewer on DOMContentLoaded');
+    window.inlineViewer = new InlineViewer();
+  }
+});
+
+// Fallback initialization for cases where DOMContentLoaded already fired
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  if (!window.inlineViewer) {
+    console.log('Fallback initialization for inline viewer');
+    setTimeout(() => {
+      window.inlineViewer = new InlineViewer();
+    }, 100);
+  }
+}

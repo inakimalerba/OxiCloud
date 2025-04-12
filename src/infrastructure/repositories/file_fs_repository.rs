@@ -677,9 +677,14 @@ impl FileRepository for FileFsRepository {
                 match self.storage_mediator.get_folder_path(id).await {
                     Ok(path) => {
                         tracing::info!("Using folder path: {:?} for folder_id: {:?}", path, id);
-                        // Convert to StoragePath
-                        let path_str = path.to_string_lossy().to_string();
-                        StoragePath::from_string(&path_str)
+                        // Convert to StoragePath - use just the folder name to avoid path duplication
+                        // Get just the folder name to avoid path duplication
+                        let lossy = path.to_string_lossy().to_string();
+                        let folder_name = path.file_name()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_else(|| &lossy);
+                        tracing::info!("Using folder name: {} for StoragePath", folder_name);
+                        StoragePath::from_string(folder_name)
                     },
                     Err(e) => {
                         tracing::error!("Error getting folder: {}", e);
@@ -863,13 +868,56 @@ impl FileRepository for FileFsRepository {
         ).await?;
         
         // Ensure ID mapping is persisted - this is critical for later retrieval
-        let save_result = self.id_mapping_service.save_changes().await;
-        if let Err(e) = &save_result {
-            tracing::error!("Failed to save ID mapping for file {}: {}", id, e);
-        } else {
-            tracing::info!("Successfully saved ID mapping for file ID: {} -> path: {}", id, path_string);
+        // Ejecutar múltiples intentos de guardado con verificación para garantizar persistencia
+        for attempt in 1..=3 {
+            match self.id_mapping_service.save_changes().await {
+                Ok(_) => {
+                    tracing::info!("Successfully saved ID mapping for file ID: {} -> path: {} (attempt {})", id, path_string, attempt);
+                    
+                    // Verificar que el mapeo se puede recuperar después de guardado
+                    if let Ok(verified_path) = self.id_mapping_service.get_path_by_id(&id).await {
+                        if verified_path.to_string() == path_string {
+                            tracing::info!("Verified ID mapping is retrievable after save: {} -> {}", id, path_string);
+                            break; // Guaradado correcto y verificado, salir del bucle
+                        } else {
+                            tracing::error!("Mapping verification failed: expected {} but got {}", path_string, verified_path.to_string());
+                            if attempt < 3 {
+                                tracing::info!("Will retry saving ID mapping (attempt {}/3)", attempt + 1);
+                                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                                continue;
+                            } else {
+                                return Err(FileRepositoryError::Other(
+                                    format!("Failed to verify ID mapping for file: {} after 3 attempts", id)
+                                ));
+                            }
+                        }
+                    } else {
+                        tracing::error!("Cannot verify mapping, ID {} not found after save", id);
+                        if attempt < 3 {
+                            tracing::info!("Will retry saving ID mapping (attempt {}/3)", attempt + 1);
+                            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                            continue;
+                        } else {
+                            return Err(FileRepositoryError::Other(
+                                format!("Failed to verify ID mapping for file: {} after 3 attempts", id)
+                            ));
+                        }
+                    }
+                },
+                Err(e) => {
+                    tracing::error!("Failed to save ID mapping for file {}: {} (attempt {})", id, e, attempt);
+                    if attempt < 3 {
+                        tracing::info!("Will retry saving ID mapping (attempt {}/3)", attempt + 1);
+                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                        continue;
+                    } else {
+                        return Err(FileRepositoryError::Other(
+                            format!("Failed to save ID mapping for file: {} after 3 attempts - {}", id, e)
+                        ));
+                    }
+                }
+            }
         }
-        save_result?;
         
         // Invalidate any directory cache entries for the parent folders
         // to ensure directory listings show the new file
@@ -896,9 +944,14 @@ impl FileRepository for FileFsRepository {
                 match self.storage_mediator.get_folder_path(fid).await {
                     Ok(path) => {
                         tracing::info!("Using folder path: {:?} for folder_id: {:?}", path, fid);
-                        // Convert to StoragePath
-                        let path_str = path.to_string_lossy().to_string();
-                        StoragePath::from_string(&path_str)
+                        // Convert to StoragePath - use just the folder name to avoid path duplication
+                        // Get just the folder name to avoid path duplication
+                        let lossy = path.to_string_lossy().to_string();
+                        let folder_name = path.file_name()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_else(|| &lossy);
+                        tracing::info!("Using folder name: {} for StoragePath", folder_name);
+                        StoragePath::from_string(folder_name)
                     },
                     Err(e) => {
                         tracing::error!("Error getting folder: {}", e);
@@ -1143,8 +1196,14 @@ impl FileRepository for FileFsRepository {
                 match self.storage_mediator.get_folder_path(id).await {
                     Ok(path) => {
                         tracing::info!("Found folder with path: {:?}", path);
-                        let path_str = path.to_string_lossy().to_string();
-                        StoragePath::from_string(&path_str)
+                        // Convert to StoragePath - use just the folder name to avoid path duplication
+                        // Get just the folder name to avoid path duplication
+                        let lossy = path.to_string_lossy().to_string();
+                        let folder_name = path.file_name()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_else(|| &lossy);
+                        tracing::info!("Using folder name: {} for StoragePath", folder_name);
+                        StoragePath::from_string(folder_name)
                     },
                     Err(e) => {
                         tracing::error!("Error getting folder by ID: {}: {}", id, e);
@@ -1155,8 +1214,8 @@ impl FileRepository for FileFsRepository {
             None => StoragePath::root(),
         };
         
-        // Get the absolute folder path
-        let abs_folder_path = self.resolve_storage_path(&folder_storage_path);
+        // Get the absolute folder path without duplicate ./storage prefix
+        let abs_folder_path = self.path_service.resolve_path(&folder_storage_path);
         tracing::info!("Absolute folder path: {:?}", abs_folder_path);
         
         // Check if the directory exists
@@ -1475,8 +1534,14 @@ impl FileRepository for FileFsRepository {
             Some(folder_id) => {
                 match self.storage_mediator.get_folder_path(folder_id).await {
                     Ok(path) => {
-                        let path_str = path.to_string_lossy().to_string();
-                        StoragePath::from_string(&path_str)
+                        // Convert to StoragePath - use just the folder name to avoid path duplication
+                        // Get just the folder name to avoid path duplication
+                        let lossy = path.to_string_lossy().to_string();
+                        let folder_name = path.file_name()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_else(|| &lossy);
+                        tracing::info!("Target folder name: {} for StoragePath", folder_name);
+                        StoragePath::from_string(folder_name)
                     },
                     Err(e) => {
                         return Err(FileRepositoryError::Other(

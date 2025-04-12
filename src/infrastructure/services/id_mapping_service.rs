@@ -70,7 +70,7 @@ struct IdMap {
 }
 
 /// Constantes para configuración
-const SAVE_DEBOUNCE_MS: u64 = 300; // Tiempo para agrupar operaciones de guardado
+const SAVE_DEBOUNCE_MS: u64 = 0; // Sin debounce para garantizar guardado inmediato
 
 /// Servicio para gestionar mapeos entre rutas y IDs únicos
 pub struct IdMappingService {
@@ -389,7 +389,7 @@ impl IdMappingService {
         }
     }
     
-    /// Guarda cambios pendientes al disco
+    /// Guarda cambios pendientes al disco inmediatamente, sin debounce
     pub async fn save_pending_changes(&self) -> Result<(), IdMappingError> {
         // Verificar si hay cambios pendientes
         {
@@ -399,20 +399,55 @@ impl IdMappingService {
             }
         }
         
-        // Implementar debounce para agrupación de guardados
-        let map_path = self.map_path.clone();
-        let self_clone = self.clone();
-        
-        tokio::spawn(async move {
-            // Esperar un poco para permitir la agrupación de operaciones
-            time::sleep(Duration::from_millis(SAVE_DEBOUNCE_MS)).await;
-            
-            if let Err(e) = self_clone.save_id_map().await {
-                tracing::error!("Failed to save ID map to {}: {}", map_path.display(), e);
+        // Guardar inmediatamente (sin debounce ni spawn)
+        match self.save_id_map().await {
+            Ok(_) => {
+                tracing::info!("ID mappings saved successfully to disk at {}", self.map_path.display());
+                
+                // Verificar explícitamente que el archivo existe y tiene tamaño
+                match std::fs::metadata(&self.map_path) {
+                    Ok(metadata) => {
+                        if metadata.len() > 0 {
+                            tracing::info!("Verified saved map file exists with size: {} bytes", metadata.len());
+                        } else {
+                            tracing::warn!("Map file exists but has zero size - this might cause issues");
+                        }
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to verify saved map file: {}", e);
+                        // Intentar un segundo guardado si la verificación falla
+                        if let Err(retry_err) = self.save_id_map().await {
+                            tracing::error!("Second save attempt also failed: {}", retry_err);
+                            return Err(IdMappingError::IoError(std::io::Error::new(
+                                std::io::ErrorKind::Other,
+                                format!("Failed to verify and retry save: {}", retry_err)
+                            )));
+                        }
+                        tracing::info!("Second save attempt succeeded");
+                    }
+                }
+                
+                Ok(())
+            },
+            Err(e) => {
+                tracing::error!("Failed to save ID map to {}: {}", self.map_path.display(), e);
+                // Intentar un segundo guardado con retraso en caso de error
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                match self.save_id_map().await {
+                    Ok(_) => {
+                        tracing::info!("Second save attempt succeeded after initial failure");
+                        Ok(())
+                    },
+                    Err(retry_e) => {
+                        tracing::error!("Second save attempt also failed: {}", retry_e);
+                        Err(IdMappingError::IoError(std::io::Error::new(
+                            std::io::ErrorKind::Other, 
+                            format!("Failed to save ID mappings after retry: {}", retry_e)
+                        )))
+                    }
+                }
             }
-        });
-        
-        Ok(())
+        }
     }
 }
 
