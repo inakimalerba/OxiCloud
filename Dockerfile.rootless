@@ -54,8 +54,8 @@ RUN chown -R oxicloud:oxicloud /app
 # Set the non-root user for running the application
 USER oxicloud
 
-# Expose the port the application listens on (use ports above 1024 to avoid root requirement)
-EXPOSE 3000
+# Expose the port the application listens on
+EXPOSE 8086 8085
 
 # Run the binary in release mode
 CMD ["./oxicloud", "--release"]
