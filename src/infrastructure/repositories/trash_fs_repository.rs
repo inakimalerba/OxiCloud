@@ -171,32 +171,27 @@ impl TrashFsRepository {
         
         let original_id = Uuid::parse_str(&entry.original_id)
             .map_err(|e| DomainError::validation_error(
-                "Trash", 
                 format!("Invalid original ID format: {}", e)
             ))?;
             
         let id = Uuid::parse_str(&entry.id)
             .map_err(|e| DomainError::validation_error(
-                "Trash", 
                 format!("Invalid ID format: {}", e)
             ))?;
             
         let user_id = Uuid::parse_str(&entry.user_id)
             .map_err(|e| DomainError::validation_error(
-                "Trash", 
                 format!("Invalid user ID format: {}", e)
             ))?;
             
         let trashed_at = chrono::DateTime::parse_from_rfc3339(&entry.trashed_at)
             .map_err(|e| DomainError::validation_error(
-                "Trash",
                 format!("Invalid trashed_at date: {}", e)
             ))?
             .with_timezone(&Utc);
             
         let deletion_date = chrono::DateTime::parse_from_rfc3339(&entry.deletion_date)
             .map_err(|e| DomainError::validation_error(
-                "Trash",
                 format!("Invalid deletion_date: {}", e)
             ))?
             .with_timezone(&Utc);

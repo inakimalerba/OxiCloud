@@ -312,6 +312,8 @@ pub struct AppState {
     pub favorites_service: Option<Arc<dyn FavoritesUseCase>>,
     pub recent_service: Option<Arc<dyn RecentItemsUseCase>>,
     pub storage_usage_service: Option<Arc<dyn crate::application::ports::storage_ports::StorageUsagePort>>,
+    pub calendar_service: Option<Arc<dyn crate::application::ports::storage_ports::StorageUseCase>>,
+    pub contact_service: Option<Arc<dyn crate::application::ports::storage_ports::StorageUseCase>>,
 }
 
 impl Default for AppState {
@@ -825,6 +827,8 @@ impl Default for AppState {
             favorites_service: None,
             recent_service: None,
             storage_usage_service: None,
+            calendar_service: None,
+            contact_service: None,
         }
     }
 }
@@ -846,6 +850,8 @@ impl AppState {
             favorites_service: None,
             recent_service: None,
             storage_usage_service: None,
+            calendar_service: None,
+            contact_service: None,
         }
     }
     
@@ -881,6 +887,16 @@ impl AppState {
     
     pub fn with_storage_usage_service(mut self, storage_usage_service: Arc<dyn crate::application::ports::storage_ports::StorageUsagePort>) -> Self {
         self.storage_usage_service = Some(storage_usage_service);
+        self
+    }
+    
+    pub fn with_calendar_service(mut self, calendar_service: Arc<dyn crate::application::ports::storage_ports::StorageUseCase>) -> Self {
+        self.calendar_service = Some(calendar_service);
+        self
+    }
+    
+    pub fn with_contact_service(mut self, contact_service: Arc<dyn crate::application::ports::storage_ports::StorageUseCase>) -> Self {
+        self.contact_service = Some(contact_service);
         self
     }
 }

@@ -238,14 +238,14 @@ impl From<FolderRepositoryError> for DomainError {
                 DomainError::already_exists("Folder", path)
             },
             FolderRepositoryError::InvalidPath(path) => {
-                DomainError::validation_error("Folder", format!("Invalid path: {}", path))
+                DomainError::validation_error(format!("Invalid path: {}", path))
             },
             FolderRepositoryError::IoError(e) => {
                 DomainError::internal_error("Folder", format!("IO error: {}", e))
                     .with_source(e)
             },
             FolderRepositoryError::ValidationError(msg) => {
-                DomainError::validation_error("Folder", msg)
+                DomainError::validation_error(msg)
             },
             FolderRepositoryError::MappingError(msg) => {
                 DomainError::internal_error("Folder", format!("Mapping error: {}", msg))

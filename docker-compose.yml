@@ -34,6 +34,7 @@ services:
       - postgres
     environment:
       - "OXICLOUD_DB_CONNECTION_STRING=postgres://postgres:postgres@postgres/oxicloud"
+      - "DATABASE_URL=postgres://postgres:postgres@postgres/oxicloud"
     volumes:
       - storage_data:/app/storage
 

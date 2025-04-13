@@ -123,7 +123,7 @@ impl WebDavAdapter {
     /// Parse a PROPFIND XML request
     pub fn parse_propfind<R: Read>(reader: R) -> Result<PropFindRequest> {
         let mut xml_reader = Reader::from_reader(BufReader::new(reader));
-        xml_reader.trim_text(true);
+        xml_reader.config_mut().trim_text(true);
         
         let mut buffer = Vec::new();
         let mut in_propfind = false;
@@ -649,7 +649,7 @@ impl WebDavAdapter {
     /// Parse a PROPPATCH XML request
     pub fn parse_proppatch<R: Read>(reader: R) -> Result<(Vec<PropValue>, Vec<QualifiedName>)> {
         let mut xml_reader = Reader::from_reader(BufReader::new(reader));
-        xml_reader.trim_text(true);
+        xml_reader.config_mut().trim_text(true);
         
         let mut buffer = Vec::new();
         let mut in_propertyupdate = false;
@@ -849,7 +849,7 @@ impl WebDavAdapter {
     /// Parse a LOCK XML request
     pub fn parse_lockinfo<R: Read>(reader: R) -> Result<(LockScope, LockType, Option<String>)> {
         let mut xml_reader = Reader::from_reader(BufReader::new(reader));
-        xml_reader.trim_text(true);
+        xml_reader.config_mut().trim_text(true);
         
         let mut buffer = Vec::new();
         let mut in_lockinfo = false;
@@ -996,7 +996,7 @@ impl WebDavAdapter {
     }
     
     /// Helper method to extract namespace from tag name
-    fn extract_namespace(name: &str) -> String {
+    pub fn extract_namespace(name: &str) -> String {
         if let Some(idx) = name.rfind(':') {
             if idx > 0 {
                 return name[..idx].to_string();
@@ -1007,7 +1007,7 @@ impl WebDavAdapter {
     }
     
     /// Helper method to extract local name from tag name
-    fn extract_local_name(name: &str) -> String {
+    pub fn extract_local_name(name: &str) -> String {
         if let Some(idx) = name.rfind(':') {
             if idx > 0 && idx < name.len() - 1 {
                 return name[idx+1..].to_string();

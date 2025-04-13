@@ -1,21 +1,21 @@
+pub mod auth_application_service;
 pub mod batch_operations;
+pub mod calendar_service;
+pub mod contact_service;
+pub mod favorites_service;
+pub mod file_management_service;
+pub mod file_retrieval_service;
 pub mod file_service;
+pub mod file_upload_service;
+pub mod file_use_case_factory;
 pub mod folder_service;
 pub mod i18n_application_service;
-pub mod storage_mediator;
-
-// Nuevos servicios refactorizados
-pub mod file_upload_service;
-pub mod file_retrieval_service;
-pub mod file_management_service;
-pub mod file_use_case_factory;
-pub mod auth_application_service;
-pub mod trash_service;
+pub mod recent_service;
 pub mod search_service;
 pub mod share_service;
-pub mod favorites_service;
-pub mod recent_service;
+pub mod storage_mediator;
 pub mod storage_usage_service;
+pub mod trash_service;
 
 #[cfg(test)]
 mod trash_service_test;

@@ -89,7 +89,7 @@ impl TrashUseCase for TrashService {
         debug!("Getting trash items for user: {}", user_id);
         
         let user_uuid = Uuid::parse_str(user_id)
-            .map_err(|e| DomainError::validation_error("User", format!("Invalid user ID: {}", e)))?;
+            .map_err(|e| DomainError::validation_error(format!("Invalid user ID: {}", e)))?;
             
         let items = self.trash_repository.get_trash_items(&user_uuid).await?;
         
@@ -119,7 +119,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid item UUID: {} - Error: {}", item_id, e);
-                return Err(DomainError::validation_error("Item", format!("Invalid item ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid item ID: {}", e)));
             }
         };
         
@@ -131,7 +131,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid user UUID: {} - Error: {}", user_id, e);
-                return Err(DomainError::validation_error("User", format!("Invalid user ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid user ID: {}", e)));
             }
         };
         
@@ -244,7 +244,7 @@ impl TrashUseCase for TrashService {
                 debug!("Folder moved to trash: {}", item_id);
                 Ok(())
             },
-            _ => Err(DomainError::validation_error("Item", format!("Invalid item type: {}", item_type))),
+            _ => Err(DomainError::validation_error(format!("Invalid item type: {}", item_type))),
         }
     }
 
@@ -259,7 +259,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid trash ID format: {} - {}", trash_id, e);
-                return Err(DomainError::validation_error("Trash", format!("Invalid trash ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid trash ID: {}", e)));
             }
         };
             
@@ -270,7 +270,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid user ID format: {} - {}", user_id, e);
-                return Err(DomainError::validation_error("User", format!("Invalid user ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid user ID: {}", e)));
             }
         };
         
@@ -384,7 +384,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid trash ID format: {} - {}", trash_id, e);
-                return Err(DomainError::validation_error("Trash", format!("Invalid trash ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid trash ID: {}", e)));
             }
         };
             
@@ -395,7 +395,7 @@ impl TrashUseCase for TrashService {
             },
             Err(e) => {
                 error!("Invalid user ID format: {} - {}", user_id, e);
-                return Err(DomainError::validation_error("User", format!("Invalid user ID: {}", e)));
+                return Err(DomainError::validation_error(format!("Invalid user ID: {}", e)));
             }
         };
         
@@ -500,7 +500,7 @@ impl TrashUseCase for TrashService {
         info!("Emptying trash for user {}", user_id);
         
         let user_uuid = Uuid::parse_str(user_id)
-            .map_err(|e| DomainError::validation_error("User", format!("Invalid user ID: {}", e)))?;
+            .map_err(|e| DomainError::validation_error(format!("Invalid user ID: {}", e)))?;
         
         // Get all items in the user's trash
         let items = self.trash_repository.get_trash_items(&user_uuid).await?;

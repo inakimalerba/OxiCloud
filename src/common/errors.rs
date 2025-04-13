@@ -24,6 +24,8 @@ pub enum ErrorKind {
     NotImplemented,
     /// Operación no soportada
     UnsupportedOperation,
+    /// Error de base de datos
+    DatabaseError,
 }
 
 impl Display for ErrorKind {
@@ -37,6 +39,7 @@ impl Display for ErrorKind {
             ErrorKind::InternalError => write!(f, "Internal Error"),
             ErrorKind::NotImplemented => write!(f, "Not Implemented"),
             ErrorKind::UnsupportedOperation => write!(f, "Unsupported Operation"),
+            ErrorKind::DatabaseError => write!(f, "Database Error"),
         }
     }
 }
@@ -140,11 +143,33 @@ impl DomainError {
         }
     }
     
+    /// Alias for access_denied to maintain compatibility
+    pub fn unauthorized<S: Into<String>>(message: S) -> Self {
+        Self {
+            kind: ErrorKind::AccessDenied,
+            entity_type: "Authorization",
+            entity_id: None,
+            message: message.into(),
+            source: None,
+        }
+    }
+    
+    /// Crea un error de base de datos
+    pub fn database_error<S: Into<String>>(message: S) -> Self {
+        Self {
+            kind: ErrorKind::DatabaseError, 
+            entity_type: "Database",
+            entity_id: None,
+            message: message.into(),
+            source: None,
+        }
+    }
+    
     /// Crea un error de validación
-    pub fn validation_error<S: Into<String>>(entity_type: &'static str, message: S) -> Self {
+    pub fn validation_error<S: Into<String>>(message: S) -> Self {
         Self {
             kind: ErrorKind::InvalidInput,
-            entity_type,
+            entity_type: "Validation",
             entity_id: None,
             message: message.into(),
             source: None,
@@ -310,6 +335,7 @@ impl From<DomainError> for AppError {
             ErrorKind::InternalError => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             ErrorKind::NotImplemented => axum::http::StatusCode::NOT_IMPLEMENTED,
             ErrorKind::UnsupportedOperation => axum::http::StatusCode::METHOD_NOT_ALLOWED,
+            ErrorKind::DatabaseError => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
         };
         
         Self {

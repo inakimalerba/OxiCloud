@@ -10,7 +10,7 @@
  */
 
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Utc, Duration, TimeZone};
 use thiserror::Error;
 
 use crate::common::errors::{Result, DomainError, ErrorKind};
@@ -404,11 +404,13 @@ impl CalendarEvent {
             ));
         }
         
+        // Clone the summary before updating the struct
+        let summary_clone = summary.clone();
         self.summary = summary;
         self.updated_at = Utc::now();
         
-        // Update iCalendar data
-        self.update_ical_property("SUMMARY", &self.summary);
+        // Update iCalendar data using the cloned value
+        self.update_ical_property("SUMMARY", &summary_clone);
         
         Ok(())
     }
@@ -613,7 +615,7 @@ impl CalendarEvent {
      */
     pub fn occurs_in_range(&self, start: &DateTime<Utc>, end: &DateTime<Utc>) -> bool {
         // Basic case: event directly overlaps with range
-        if (self.start_time <= *end && self.end_time >= *start) {
+        if self.start_time <= *end && self.end_time >= *start {
             return true;
         }
         
@@ -708,7 +710,7 @@ impl CalendarEvent {
                 .map_err(|_| "Invalid day".to_string())?;
             
             return match chrono::NaiveDate::from_ymd_opt(year, month, day) {
-                Some(date) => Ok(DateTime::<Utc>::from_utc(date.and_hms_opt(0, 0, 0).unwrap(), Utc)),
+                Some(date) => Ok(Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap())),
                 None => Err("Invalid date components".to_string()),
             };
         }
@@ -735,7 +737,7 @@ impl CalendarEvent {
         
         match chrono::NaiveDate::from_ymd_opt(year, month, day) {
             Some(date) => match date.and_hms_opt(hour, minute, second) {
-                Some(datetime) => Ok(DateTime::<Utc>::from_utc(datetime, Utc)),
+                Some(datetime) => Ok(Utc.from_utc_datetime(&datetime)),
                 None => Err("Invalid time components".to_string()),
             },
             None => Err("Invalid date components".to_string()),

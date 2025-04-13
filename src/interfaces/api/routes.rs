@@ -119,7 +119,9 @@ pub fn create_api_routes(
         trash_service: trash_service.clone(), // This is the important part - include the trash service
         share_service: share_service.clone(), // Include the share service for routes
         favorites_service: favorites_service.clone(), // Include the favorites service for routes
-        recent_service: recent_service.clone() // Include the recent service for routes
+        recent_service: recent_service.clone(), // Include the recent service for routes
+        calendar_service: None, // Adding missing field
+        contact_service: None   // Adding missing field
     };
     // Inicializar el servicio de operaciones por lotes
     let batch_service = Arc::new(BatchOperationService::default(
@@ -637,6 +639,24 @@ pub fn create_api_routes(
     let router = if webdav_enabled {
         use crate::interfaces::api::handlers::webdav_handler;
         router.merge(webdav_handler::webdav_routes())
+    } else {
+        router
+    };
+    
+    // Add CalDAV routes if needed
+    let caldav_enabled = true; // In production, you'd read this from a config
+    let router = if caldav_enabled {
+        use crate::interfaces::api::handlers::caldav_handler;
+        router.nest("/caldav", caldav_handler::caldav_routes())
+    } else {
+        router
+    };
+    
+    // Add CardDAV routes if needed
+    let carddav_enabled = true; // In production, you'd read this from a config
+    let router = if carddav_enabled {
+        // Note: We'll implement carddav_handler in the next phase
+        router
     } else {
         router
     };

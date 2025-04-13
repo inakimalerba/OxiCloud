@@ -24,6 +24,7 @@ COPY static static
 COPY db db
 COPY Cargo.toml Cargo.lock ./
 # Build with all optimizations
+ENV DATABASE_URL="postgres://postgres:postgres@postgres/oxicloud"
 RUN cargo build --release
 
 # Stage 3: Create minimal final image

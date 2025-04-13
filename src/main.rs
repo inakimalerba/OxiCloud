@@ -659,6 +659,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Recent items service is disabled (requires database connection)");
         None
     };
+    
+    // For now, we'll use a placeholder for the contact service
+    // Instead of using the real PostgreSQL repositories, we'll create a dummy implementation
+    // This makes the code compile, and we can replace it with the real implementation later
+    let contact_service: Option<Arc<dyn application::ports::storage_ports::StorageUseCase>> = None;
 
     let application_services = common::di::ApplicationServices {
         folder_service: folder_service.clone(),
@@ -676,32 +681,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     // Create the AppState without Arc first
-    let mut app_state = AppState::new(
-        core_services,
-        repository_services,
-        application_services,
-    );
+    let calendar_service_option = None;
     
-    // Add database pool if available
-    if let Some(pool) = db_pool.clone() {
-        app_state = app_state.with_database(pool);
-    }
-    
-    // Add auth services if available
-    let have_auth_services = auth_services.is_some();
-    if let Some(services) = auth_services {
-        app_state = app_state.with_auth_services(services);
-    }
-    
-    // Add favorites service if available
-    if let Some(service) = favorites_service.clone() {
-        app_state = app_state.with_favorites_service(service);
-    }
-    
-    // Add recent service if available
-    if let Some(service) = recent_service.clone() {
-        app_state = app_state.with_recent_service(service);
-    }
+    let mut app_state = AppState {
+        core: core_services,
+        repositories: repository_services,
+        applications: application_services,
+        db_pool: db_pool.clone(),
+        auth_service: auth_services.clone(),
+        trash_service: trash_service.clone(),
+        share_service: share_service.clone(),
+        favorites_service: favorites_service.clone(),
+        recent_service: recent_service.clone(),
+        storage_usage_service: None,
+        calendar_service: calendar_service_option,
+        contact_service: contact_service.clone(),
+    };
     
     // Initialize storage usage service
     let _storage_usage_service = if let Some(pool) = db_pool_ref {
@@ -746,7 +741,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(TraceLayer::new_for_http());
     
     // Add auth routes if auth is enabled
-    if config.features.enable_auth && have_auth_services {
+    if config.features.enable_auth && auth_services.is_some() {
         // Create auth routes with app state
         let auth_router = auth_routes().with_state(app_state.clone());
         
