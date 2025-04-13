@@ -13,10 +13,10 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Add option to move files between folders
 
 ### File Preview
-- [ ] Implement integrated image viewer
+- [x] Implement integrated image viewer
 - [ ] Add basic PDF viewer
 - [ ] Generate thumbnails for images
-- [ ] Implement specific icons by file type
+- [x] Implement specific icons by file type
 - [ ] Add text/code preview
 
 ### Enhanced Search
@@ -30,10 +30,10 @@ This document contains the task list for the development of OxiCloud, a minimali
 ### UI/UX Optimizations
 - [ ] Improve responsive design for mobile devices
 - [ ] Implement drag & drop between folders
-- [ ] Add support for multiple file selection
+- [x] Add support for multiple file selection
 - [x] Implement multiple file uploads
 - [ ] Add progress indicators for long operations
-- [ ] Implement UI notifications for events
+- [x] Implement UI notifications for events
 
 ## Phase 2: Authentication and Multi-User
 
@@ -43,13 +43,13 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Create login system
 - [ ] Add user profile page
 - [ ] Implement password recovery
-- [ ] Separate storage by user
+- [x] Separate storage by user
 
 ### Quotas and Permissions
 - [x] Implement storage quota system
 - [x] Add basic role system (admin/user)
 - [ ] Create admin panel
-- [ ] Implement folder-level permissions
+- [x] Implement folder-level permissions
 - [x] Add storage usage monitoring
 
 ### Basic Security
@@ -102,8 +102,8 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Add authentication for WebDAV
 - [x] Implement PROPFIND operations
 - [x] Add support for locking
-- [ ] Test compatibility with standard clients
-- [ ] Optimize WebDAV performance
+- [x] Test compatibility with standard clients
+- [x] Optimize WebDAV performance
 - [ ] Implement Range Requests (RFC 7233) for resumable transfers
 - [ ] Support partial file updates with HTTP PATCH for bandwidth efficiency
 
@@ -135,11 +135,11 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Add version retention policies
 
 ### Basic Applications
-- [ ] Design plugin/app system
+- [x] Design plugin/app system
 - [ ] Implement basic text viewer/editor
 - [ ] Add simple notes application
-- [ ] Implement basic calendar
-- [ ] Create API for third-party applications
+- [x] Implement basic calendar
+- [x] Create API for third-party applications
 
 ## Continuous Optimizations
 
@@ -149,21 +149,21 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Optimize large file transmission
 - [x] Add adaptive compression by file type
 - [x] Implement asynchronous processing for heavy tasks
-- [ ] Optimize database queries
+- [x] Optimize database queries
 - [ ] Implement scaling strategies
-- [ ] Implement transfer acceleration with multipart chunking
+- [x] Implement transfer acceleration with multipart chunking
 - [ ] Implement differential sync algorithm (similar to rsync)
-- [ ] Add strong ETag support for more efficient caching
+- [x] Add strong ETag support for more efficient caching
 
 ### Frontend
 - [ ] Optimize initial asset loading
 - [ ] Implement lazy loading for large lists
-- [ ] Add local cache (localStorage/IndexedDB)
+- [x] Add local cache (localStorage/IndexedDB)
 - [ ] Optimize UI rendering
 - [ ] Implement intelligent prefetching
 - [ ] Add basic offline support
 - [ ] Implement client-side image resizing before upload
-- [ ] Add HTTP/2 support for multiplexing requests
+- [x] Add HTTP/2 support for multiplexing requests
 - [ ] Implement progressive image loading
 
 ### Storage
@@ -174,7 +174,7 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [ ] Create automated backup system
 - [ ] Add support for distributed storage
 - [ ] Implement media transcoding for optimized delivery
-- [ ] Add content-aware compression by file format
+- [x] Add content-aware compression by file format
 - [ ] Implement dynamic thumbnail resizing based on viewport
 
 ## Infrastructure and Deployment
@@ -182,6 +182,212 @@ This document contains the task list for the development of OxiCloud, a minimali
 - [x] Create Docker configuration
 - [ ] Implement CI/CD with GitHub Actions
 - [x] Add automated tests
-- [ ] Create installation documentation
+- [x] Create installation documentation
 - [ ] Implement monitoring and alerts
 - [ ] Add automatic update system
+
+## New Comprehensive Roadmap
+
+### Advanced File Management
+- [x] Implement optimized file upload/download
+  - [x] Implement chunked upload for large files
+  - [x] Add file integrity verification
+  - [x] Develop adaptive compression by file type
+- [ ] Implement preview for different file types
+  - [ ] Create integrated PDF viewer
+  - [ ] Add office document viewer
+  - [ ] Develop code viewer with syntax highlighting
+- [ ] Add online document editing
+  - [ ] Integrate text/markdown editor
+  - [ ] Implement collaborative spreadsheet editor
+  - [ ] Develop simple image editor
+- [ ] Implement file version control
+  - [ ] Create version history system
+  - [ ] Add previous version restoration
+  - [ ] Develop visual changes comparator
+
+### Multi-device Synchronization
+- [ ] Develop synchronization clients
+  - [ ] Windows client using Rust
+  - [ ] macOS client using Rust
+  - [ ] Linux client using Rust
+- [ ] Create mobile applications
+  - [ ] Android application
+  - [ ] iOS application
+- [ ] Implement selective synchronization
+  - [ ] Allow specific folder selection
+  - [ ] Add synchronization profiles
+  - [ ] Develop synchronization by file types
+- [ ] Develop delta synchronization
+  - [ ] Implement incremental change transfer
+  - [ ] Add differential compression
+  - [ ] Implement intelligent retransmission
+
+### Advanced Sharing
+- [x] Improve public links
+  - [ ] Add configurable expiration date
+  - [x] Implement password protection
+  - [ ] Develop download limits
+- [x] Implement granular permissions
+  - [x] Add per-folder/file permissions
+  - [x] Develop customizable roles
+  - [x] Implement permission inheritance
+- [ ] Add real-time collaboration
+  - [ ] Develop collaborative editing
+  - [ ] Add presence indicators
+  - [ ] Implement per-user change history
+- [ ] Integrate with social networks
+  - [ ] Add direct sharing to popular platforms
+  - [ ] Implement customized preview for networks
+  - [ ] Develop sharing statistics
+
+### Robust Security
+- [ ] Implement end-to-end encryption
+  - [ ] Research and select optimal algorithms
+  - [ ] Develop key management system
+  - [ ] Add in-transit and at-rest encryption
+- [ ] Add multi-factor authentication
+  - [ ] Integrate app-based authentication
+  - [ ] Add support for U2F/Yubikey
+  - [ ] Implement backup codes
+- [x] Develop password policies
+  - [x] Add customizable requirements
+  - [ ] Implement password rotation
+  - [ ] Develop compromised password detection
+- [ ] Create detailed audit system
+  - [ ] Log access and actions
+  - [ ] Add security alerts
+  - [ ] Implement configurable log retention
+
+### Personal Data Management
+- [x] Complete CardDAV implementation
+  - [x] Finalize contact synchronization
+  - [x] Add support for contact groups
+  - [x] Implement custom fields
+- [x] Complete CalDAV implementation
+  - [x] Finalize calendar synchronization
+  - [x] Add support for recurring events
+  - [ ] Implement notifications/reminders
+- [ ] Develop password manager
+  - [ ] Create encrypted storage
+  - [ ] Add password generator
+  - [ ] Implement auto-fill
+- [ ] Implement encrypted notes
+  - [ ] Develop notes editor
+  - [ ] Add tags and organization
+  - [ ] Implement full-text search
+
+### Automation and Workflows
+- [ ] Create automated rules
+  - [ ] Develop automatic file organization
+  - [ ] Add scheduled actions
+  - [ ] Implement customizable triggers
+- [ ] Integrate with productivity tools
+  - [ ] Develop connectors for popular services
+  - [ ] Add webhooks for integration
+  - [x] Implement API for extensions
+- [ ] Create customizable workflows
+  - [ ] Develop document approval/review
+  - [ ] Add configurable states and transitions
+  - [ ] Implement automated notifications
+- [ ] Implement scheduled actions
+  - [ ] Add automated backups
+  - [ ] Develop intelligent archiving
+  - [ ] Implement periodic analysis
+
+### Intelligence and Analysis
+- [ ] Implement OCR for images
+  - [ ] Add text recognition in images
+  - [ ] Develop indexing of recognized content
+  - [ ] Implement search in extracted text
+- [ ] Create automatic categorization
+  - [ ] Develop content-based classification
+  - [ ] Add intelligent grouping
+  - [ ] Implement organization suggestions
+- [ ] Add intelligent tagging
+  - [ ] Implement entity recognition
+  - [ ] Develop topic analysis
+  - [ ] Add facial tagging for photos
+- [ ] Develop personalized recommendations
+  - [ ] Implement usage-based suggestions
+  - [ ] Add relevant content discovery
+  - [ ] Develop needs prediction
+- [ ] Implement intelligent photo gallery
+  - [ ] Create advanced photo viewer with smooth zoom and navigation
+  - [ ] Add EXIF metadata extraction and visualization
+  - [ ] Implement map of photo locations
+  - [ ] Develop automatic timeline by date/event
+  - [ ] Add recognition and grouping by identified people
+  - [ ] Implement automatic album creation by events, places, and people
+  - [ ] Develop photo search using combined filters (person+place+date)
+  - [ ] Add scene and object detection in photos (beach, mountain, animals, etc.)
+  - [ ] Implement similar or duplicate photo detection
+  - [ ] Add non-destructive basic editing features (crop, filters, adjustments)
+
+### Enterprise Collaboration
+- [ ] Create shared workspaces
+  - [ ] Develop team structures
+  - [ ] Add project templates
+  - [ ] Implement customized dashboards
+- [x] Implement role-based access control
+  - [x] Develop customizable roles
+  - [x] Add granular access policies
+  - [ ] Implement segregation of duties
+- [ ] Add comments and annotations
+  - [ ] Develop document annotations
+  - [ ] Add highlighting and marking
+  - [ ] Implement comment resolution
+- [ ] Integrate videoconference services
+  - [ ] Add direct calls from platform
+  - [ ] Develop screen sharing
+  - [ ] Implement meeting recording
+
+### Advanced Technical Optimizations
+- [ ] Implement distributed architecture
+  - [ ] Develop high availability
+  - [ ] Add load balancing
+  - [ ] Implement fault tolerance
+- [ ] Create tiered storage
+  - [ ] Develop hot/warm/cold stratification
+  - [ ] Add automatic migration policies
+  - [ ] Implement cost optimization
+- [x] Optimize compression and deduplication
+  - [x] Develop adaptive compression
+  - [ ] Add block-level deduplication
+  - [ ] Implement similar file detection
+
+### Interoperability and Extensibility
+- [x] Improve RESTful API
+  - [x] Complete OpenAPI documentation
+  - [ ] Add API versioning
+  - [ ] Implement intelligent rate limiting
+- [ ] Develop webhook system
+  - [ ] Add configurable triggers
+  - [ ] Implement retries and reliability
+  - [ ] Develop delivery verification
+- [ ] Implement OAuth for third parties
+  - [ ] Add standard authentication flows
+  - [ ] Develop granular permission management
+  - [ ] Implement access revocation
+- [ ] Create developer SDK
+  - [ ] Develop client libraries for popular languages
+  - [ ] Add examples and documentation
+  - [ ] Implement testing sandbox
+
+### Governance and Compliance
+- [x] Implement retention policies
+  - [x] Develop configurable retention by type
+  - [ ] Add automatic archiving
+  - [x] Implement secure deletion
+- [ ] Add regulatory compliance
+  - [ ] Develop GDPR tools
+  - [ ] Add HIPAA compliance where applicable
+  - [ ] Implement compliance matrices
+- [ ] Create complete data export
+  - [ ] Develop standardized formats
+  - [ ] Add scheduled export
+  - [ ] Implement data portability
+- [ ] Implement legal hold
+  - [ ] Develop case-based retention
+  - [ ] Add evidence preservation
+  - [ ] Implement chain of custody
