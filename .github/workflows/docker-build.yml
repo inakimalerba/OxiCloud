@@ -12,7 +12,8 @@ jobs:
   build-and-test:
     name: Build and Test Docker Image
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 120  # Aumentado a 2 horas para dar más tiempo a la compilación
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,17 +41,16 @@ jobs:
           push: false
           load: true
           tags: test/oxicloud:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          
+          # Caché eliminado para evitar problemas de expiración de token
+
       # Run some basic tests against the built image
       - name: Test Docker image
         run: |
           docker run --rm test/oxicloud:test --version || true
           docker run --rm test/oxicloud:test --help || true
-          
+
           # Verify the image structure
           echo "✅ Checking Docker image layers and size"
           docker image inspect test/oxicloud:test
-          
+
           echo "✅ Docker build and test completed successfully"
