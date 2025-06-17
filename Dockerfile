@@ -8,7 +8,7 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir -p src && \
     echo 'fn main() { println!("Dummy build for caching dependencies"); }' > src/main.rs && \
     cargo build --release && \
-	@@ -13,41 +22,68 @@ RUN mkdir -p src && \
+    rm -rf src target/release/deps/oxicloud*
 # Stage 2: Build the application
 FROM rust:1.85-alpine AS builder
 WORKDIR /app
